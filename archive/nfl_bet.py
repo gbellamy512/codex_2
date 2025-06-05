@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+"""
+Legacy script converted from the original notebook.
+The active code lives in the `nfl_bet/` package.
+This file remains for reference only.
+"""
+
 # coding: utf-8
 
 # In[ ]:
