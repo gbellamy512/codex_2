@@ -881,8 +881,6 @@ def create_sweep():
 
   return sweep_id
 
-precision_metric = tf.keras.metrics.Precision()
-recall_metric = tf.keras.metrics.Recall()
 
 def evaluate_and_log_metrics(model, X, y, tag):
     # Evaluate the model on the provided data
@@ -940,6 +938,10 @@ def train(config=None):
                 ('cat', OneHotEncoder(), categorical_features)
             ]
         )
+
+        # Fresh metric instances for each run to avoid duplicate logging
+        precision_metric = tf.keras.metrics.Precision()
+        recall_metric = tf.keras.metrics.Recall()
 
         # Generate or define a random seed
         random_state = random.randint(0, 1_000)

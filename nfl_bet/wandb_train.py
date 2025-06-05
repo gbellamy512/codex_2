@@ -84,11 +84,6 @@ binary_features = ["div_game"]
 non_numerical_features = categorical_features + binary_features
 numerical_features = [f for f in features if f not in non_numerical_features]
 
-
-precision_metric = tf.keras.metrics.Precision()
-recall_metric = tf.keras.metrics.Recall()
-
-
 def get_activation(name: str):
     if name == "elu":
         return tf.keras.activations.elu
@@ -167,6 +162,10 @@ def train(config: Optional[dict] = None) -> None:
                 ("cat", OneHotEncoder(), categorical_features),
             ]
         )
+
+        # Fresh metric instances for each run to avoid duplicate logging
+        precision_metric = tf.keras.metrics.Precision()
+        recall_metric = tf.keras.metrics.Recall()
 
         random_state = random.randint(0, 1000)
         wandb.log({"random_state": random_state})
