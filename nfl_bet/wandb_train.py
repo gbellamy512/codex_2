@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import os
 import random
 from pathlib import Path
 from typing import Optional, Dict
+import pprint
+import argparse
 
 import joblib
 import numpy as np
@@ -290,6 +293,117 @@ def train(config: Optional[dict] = None) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Sweep utilities
+# ---------------------------------------------------------------------------
+
+def create_sweep(project: Optional[str] = None) -> str:
+    """Create a W&B sweep using hyperparameter ranges.
+
+    The configuration mirrors the sweep setup from ``nfl_bet.py``.
+    ``project`` defaults to the ``WANDB_SWEEP_PROJECT`` environment variable or
+    ``"nfl_bet_sweep"``.
+    """
+
+    if wandb is None:
+        raise ImportError("wandb must be installed to create a sweep")
+
+    project_name = project or os.getenv("WANDB_SWEEP_PROJECT", "nfl_bet_sweep")
+
+    sweep_config: Dict[str, object] = {
+        "method": "bayes",
+    }
+    sweep_config["metric"] = {"name": "val_loss", "goal": "minimize"}
+
+    parameters_dict = {
+        "learning_rate": {
+            "distribution": "log_uniform_values",
+            "min": 1e-5,
+            "max": 1e-2,
+        },
+        "batch_size": {"values": [16, 32, 64]},
+        "hidden_layers": {
+            "distribution": "int_uniform",
+            "min": 2,
+            "max": 4,
+        },
+        "neurons": {"values": [16, 32, 64]},
+        "batch_norm": {"values": [True, False]},
+        "l1_reg": {
+            "distribution": "log_uniform_values",
+            "min": 1e-6,
+            "max": 1e-2,
+        },
+        "l2_reg": {
+            "distribution": "log_uniform_values",
+            "min": 1e-6,
+            "max": 1e-2,
+        },
+        "dropout": {
+            "distribution": "uniform",
+            "min": 0.0,
+            "max": 0.5,
+        },
+        "apply_class_weights": {"values": [True, False]},
+        "early_stopping_patience": {
+            "distribution": "int_uniform",
+            "min": 10,
+            "max": 35,
+        },
+        "early_stopping_min_delta": {
+            "distribution": "log_uniform_values",
+            "min": 1e-5,
+            "max": 1e-3,
+        },
+        "lr_scheduler_step_every": {
+            "distribution": "int_uniform",
+            "min": 5,
+            "max": 30,
+        },
+        "lr_scheduler_step_factor": {
+            "distribution": "uniform",
+            "min": 0.1,
+            "max": 0.8,
+        },
+    }
+
+    sweep_config["parameters"] = parameters_dict
+
+    gpu_devices = tf.config.list_physical_devices("GPU")
+    gpu_name = gpu_devices[0].name if gpu_devices else "CPU"
+
+    parameters_dict.update(
+        {
+            "gpu_name": {"value": gpu_name},
+            "target": {"value": "dog_win"},
+            "loss": {"value": "binary_crossentropy"},
+            "metric": {"value": "accuracy"},
+            "optimizer": {"value": "adam"},
+            "kernel_initializer": {"value": "he_normal"},
+            "activation": {"value": "relu"},
+            "outer_activation": {"value": "sigmoid"},
+            "epochs": {"value": 200},
+            "early_stopping": {"value": True},
+            "apply_lr_schedule": {"value": True},
+            "test_size": {"value": 0.1},
+            "min_periods": {"value": 3},
+            "span": {"value": 8},
+        }
+    )
+
+    pprint.pprint(sweep_config)
+    sweep_id = wandb.sweep(sweep_config, project=project_name)
+    return sweep_id
+
+
+def run_sweep(sweep_id: str, *, count: int = 1) -> None:
+    """Launch a W&B sweep agent."""
+
+    if wandb is None:
+        raise ImportError("wandb must be installed to run sweeps")
+
+    wandb.agent(sweep_id=sweep_id, function=train, count=count)
+
+# ---------------------------------------------------------------------------
 # Example entry point
 # ---------------------------------------------------------------------------
 
@@ -332,5 +446,37 @@ def example_run() -> None:
     train(default_config)
 
 
+def main(argv: Optional[list[str]] = None) -> None:
+    """Entry point for CLI usage."""
+
+    parser = argparse.ArgumentParser(description="NFL betting training utils")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    sub.add_parser("example", help="run the example training run")
+
+    sweep_parser = sub.add_parser(
+        "sweep", help="create a hyperparameter sweep and run it"
+    )
+    sweep_parser.add_argument(
+        "--project",
+        default=os.getenv("WANDB_SWEEP_PROJECT", "nfl_bet_sweep"),
+        help="W&B project name",
+    )
+    sweep_parser.add_argument(
+        "--count",
+        type=int,
+        default=int(os.getenv("WANDB_SWEEP_COUNT", "1")),
+        help="Number of sweep runs to execute",
+    )
+
+    args = parser.parse_args(argv)
+
+    if args.command == "example":
+        example_run()
+    elif args.command == "sweep":
+        sid = create_sweep(project=args.project)
+        run_sweep(sid, count=args.count)
+
+
 if __name__ == "__main__":  # pragma: no cover
-    example_run()
+    main()
