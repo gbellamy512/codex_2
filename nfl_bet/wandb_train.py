@@ -298,7 +298,7 @@ def train(config: Optional[dict] = None) -> None:
 def create_sweep(project: Optional[str] = None) -> str:
     """Create a W&B sweep using hyperparameter ranges.
 
-    The configuration mirrors the sweep setup from ``nfl_bet.py``.
+    The configuration mirrors the sweep setup from the original notebook.
     ``project`` defaults to the ``WANDB_SWEEP_PROJECT`` environment variable or
     ``"nfl_bet_sweep"``.
     """
