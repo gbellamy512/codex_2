@@ -10,3 +10,22 @@ __all__ = [
     "train_model",
     "train",
 ]
+from .wandb_eval import (
+    run_pipeline,
+    get_top_runs_quickly,
+    load_model_and_pipeline,
+    evaluate_betting_results,
+    exe,
+    evaluate_single_run,
+    aggregated_roi_table,
+)
+
+__all__.extend([
+    "run_pipeline",
+    "get_top_runs_quickly",
+    "load_model_and_pipeline",
+    "evaluate_betting_results",
+    "exe",
+    "evaluate_single_run",
+    "aggregated_roi_table",
+])
