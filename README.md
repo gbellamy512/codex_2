@@ -37,3 +37,7 @@ This project is designed to predict NFL game outcomes and to evaluate associated
 
 * **Artifact Management**:
     * Leverages `wandb` for logging, versioning, and retrieving critical artifacts such as preprocessing pipelines and trained machine learning models, ensuring reproducibility and traceability.
+
+## W&B Usage
+
+Evaluation and training utilities use Weights & Biases for experiment tracking. If your runs live under a specific W&B entity (organization or username), set the `WANDB_ENTITY` environment variable so the scripts can locate artifacts and runs across accounts.
