@@ -17,6 +17,8 @@ seed = 1
 import pandas as pd
 import numpy as np
 
+import os
+
 
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
@@ -1104,7 +1106,11 @@ def train(config=None):
 # sweep_id = create_sweep()
 # print(sweep_id)
 # wandb.agent(sweep_id, train, count=50)
-wandb.agent(sweep_id='grantbell/nfl_bet_sweep_2/qm2m2u47', function=train, count=50)
+wandb.agent(
+    sweep_id=f"{os.getenv('WANDB_ENTITY') + '/' if os.getenv('WANDB_ENTITY') else ''}nfl_bet_sweep_2/qm2m2u47",
+    function=train,
+    count=50,
+)
 
 # In[ ]:
 
@@ -1145,7 +1151,8 @@ def run_pipeline(wandb_project, features, top_metric='loss', top_n=10,
                  bet_strats=None, margins=None, cy_df=None,
                  exclude_tested: bool = True,
                  pull_high_roi: bool = False,
-                 metric_threshold=0.60):
+                 metric_threshold=0.60,
+                 entity=os.getenv("WANDB_ENTITY")):
     """
     Convenience function to run the entire evaluation pipeline:
       1. Retrieve the top N runs from W&B based on the specified metric.
@@ -1175,9 +1182,10 @@ def run_pipeline(wandb_project, features, top_metric='loss', top_n=10,
         wandb_project=wandb_project,
         bet_strats=bet_strats,
         margins=margins,
-        cy_df=cy_df
-        , exclude_tested=exclude_tested
-        , pull_high_roi=pull_high_roi
+        cy_df=cy_df,
+        exclude_tested=exclude_tested,
+        pull_high_roi=pull_high_roi,
+        entity=entity,
     )
 
     return results_df
@@ -1288,7 +1296,7 @@ def get_top_runs_quickly(
 
     return pd.DataFrame(details)
 
-def load_model_and_pipeline(run_id, last_artifact_name, wandb_project):
+def load_model_and_pipeline(run_id, last_artifact_name, wandb_project, entity=os.getenv("WANDB_ENTITY")):
     """
     Download and load a model and its corresponding preprocessing pipeline from W&B artifacts.
 
@@ -1296,14 +1304,16 @@ def load_model_and_pipeline(run_id, last_artifact_name, wandb_project):
         tuple: (model, pipeline) where model is a TensorFlow Keras model and pipeline is a pre-processing pipeline.
     """
     api = wandb.Api()
+    entity = entity or os.getenv("WANDB_ENTITY")
+    prefix = f"{entity}/" if entity else ""
 
     # Download and load the model artifact
-    model_artifact = api.artifact(f'grantbell/{wandb_project}/{last_artifact_name}')
+    model_artifact = api.artifact(f'{prefix}{wandb_project}/{last_artifact_name}')
     artifact_dir_model = model_artifact.download()
     model = tf.keras.models.load_model(f"{artifact_dir_model}/model.keras")
 
     # Download and load the preprocessing pipeline artifact (assumes a .pkl file)
-    pipeline_artifact = api.artifact(f'grantbell/{wandb_project}/preprocessing_pipeline_{run_id}:v0')
+    pipeline_artifact = api.artifact(f'{prefix}{wandb_project}/preprocessing_pipeline_{run_id}:v0')
     artifact_dir_pipeline = pipeline_artifact.download()
     pipeline_path = f"{artifact_dir_pipeline}/pipeline.pkl"
     pipeline = load(pipeline_path)
@@ -1397,10 +1407,17 @@ def evaluate_betting_results(model, pipeline, features, df_train, df_val, df_tes
 
 import re # Import regular expressions for tag parsing
 
-def exe(df_runs_epochs, features, wandb_project='nfl_bet_sweep_8',
-        bet_strats=None, margins=None, cy_df=None,
-        exclude_tested: bool = True,
-        pull_high_roi: bool = False):
+def exe(
+    df_runs_epochs,
+    features,
+    wandb_project='nfl_bet_sweep_8',
+    bet_strats=None,
+    margins=None,
+    cy_df=None,
+    exclude_tested: bool = True,
+    pull_high_roi: bool = False,
+    entity=os.getenv("WANDB_ENTITY"),
+):
     """
     Iterate over runs, load models/pipelines, prepare data, and evaluate betting strategies.
 
@@ -1480,7 +1497,12 @@ def exe(df_runs_epochs, features, wandb_project='nfl_bet_sweep_8',
 
         # --- Load Model and Prepare Data (only if not skipped) ---
         try:
-            model, pipeline = load_model_and_pipeline(run_id, last_artifact_name, wandb_project)
+            model, pipeline = load_model_and_pipeline(
+                run_id,
+                last_artifact_name,
+                wandb_project,
+                entity=entity,
+            )
         except Exception as e:
              print(f"Error loading model/pipeline for run {run_id}. Skipping. Error: {e}")
              continue
@@ -1631,6 +1653,7 @@ def evaluate_single_run(
     margin: float,
     # wandb_project: str = 'nfl_bet_sweep_8',
     wandb_project: str,
+    entity: str = os.getenv("WANDB_ENTITY"),
     cy_year: int = 2024,
 ) -> pd.DataFrame:
     """
@@ -1639,8 +1662,10 @@ def evaluate_single_run(
     (no defaults allowed).
     """
     api = wandb.Api()
+    entity = entity or os.getenv("WANDB_ENTITY")
+    prefix = f"{entity}/" if entity else ""
     # run = api.run(f"{project_path}/{run_id}")
-    run = api.run(f"grantbell/{wandb_project}/{run_id}")
+    run = api.run(f"{prefix}{wandb_project}/{run_id}")
 
     # 1) grab the flat summary dict
     summary = run.summary._json_dict
@@ -1674,7 +1699,12 @@ def evaluate_single_run(
     last_artifact_name = artifact_names[-1]
 
     # 6) load model & pipeline
-    model, pipeline = load_model_and_pipeline(run_id, last_artifact_name, wandb_project)
+    model, pipeline = load_model_and_pipeline(
+        run_id,
+        last_artifact_name,
+        wandb_project,
+        entity=entity,
+    )
 
     # Prepare the dataset using an external function (assumed to exist)
     df_prepared = prepare_df(min_periods=min_periods, span=span)
@@ -2005,7 +2035,8 @@ _, first_res = evaluate_single_run(
     run_id=first_run,
     features=features,
     bet_strat=bet_strat,
-    margin=first_margin
+    margin=first_margin,
+    entity=os.getenv("WANDB_ENTITY"),
 )
 profit_col = f'{bet_strat}_profit'
 profit_df = first_res['df'][KEYS + [profit_col]].rename(columns={profit_col: 'profit'})
@@ -2018,7 +2049,8 @@ for run_id, margin in runs.items():
         run_id=run_id,
         features=features,
         bet_strat=bet_strat,
-        margin=margin
+        margin=margin,
+        entity=os.getenv("WANDB_ENTITY"),
     )
     df = res['df'][KEYS + ['bet']].copy()
     flag_col = f'flag_{run_id}'

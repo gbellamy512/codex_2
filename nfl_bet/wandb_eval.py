@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 from typing import List, Optional, Tuple
 
@@ -102,18 +103,22 @@ def load_model_and_pipeline(
     run_id: str,
     last_artifact_name: str,
     wandb_project: str,
+    entity: Optional[str] = os.getenv("WANDB_ENTITY"),
 ) -> Tuple[tf.keras.Model, object]:
     """Load a model and preprocessing pipeline from W&B."""
     if wandb is None:
         raise RuntimeError("wandb is required for load_model_and_pipeline")
 
+    entity = entity or os.getenv("WANDB_ENTITY")
+    prefix = f"{entity}/" if entity else ""
+
     api = wandb.Api()
-    model_art = api.artifact(f"grantbell/{wandb_project}/{last_artifact_name}")
+    model_art = api.artifact(f"{prefix}{wandb_project}/{last_artifact_name}")
     model_dir = model_art.download()
     model = tf.keras.models.load_model(f"{model_dir}/model.keras")
 
     pipe_art = api.artifact(
-        f"grantbell/{wandb_project}/preprocessing_pipeline_{run_id}:v0"
+        f"{prefix}{wandb_project}/preprocessing_pipeline_{run_id}:v0"
     )
     pipe_dir = pipe_art.download()
     pipeline = load(f"{pipe_dir}/pipeline.pkl")
@@ -207,6 +212,7 @@ def exe(
     cy_df: Optional[pd.DataFrame] = None,
     exclude_tested: bool = True,
     pull_high_roi: bool = False,
+    entity: Optional[str] = os.getenv("WANDB_ENTITY"),
 ) -> pd.DataFrame:
     """Evaluate each run for all strategy/margin combinations."""
     if wandb is None:
@@ -273,7 +279,12 @@ def exe(
                 continue
 
         try:
-            model, pipeline = load_model_and_pipeline(run_id, last_artifact_name, wandb_project)
+            model, pipeline = load_model_and_pipeline(
+                run_id,
+                last_artifact_name,
+                wandb_project,
+                entity=entity,
+            )
         except Exception as e:
             print(f"Error loading model/pipeline for run {run_id}. Skipping. Error: {e}")
             continue
@@ -397,6 +408,7 @@ def run_pipeline(
     exclude_tested: bool = True,
     pull_high_roi: bool = False,
     metric_threshold: float = 0.60,
+    entity: Optional[str] = os.getenv("WANDB_ENTITY"),
 ) -> pd.DataFrame:
     """Fetch top runs and evaluate betting ROI."""
     top_runs_df = get_top_runs_quickly(
@@ -415,6 +427,7 @@ def run_pipeline(
         cy_df=cy_df,
         exclude_tested=exclude_tested,
         pull_high_roi=pull_high_roi,
+        entity=entity,
     )
     return results_df
 
@@ -425,6 +438,7 @@ def evaluate_single_run(
     bet_strat: str,
     margin: float,
     wandb_project: str,
+    entity: Optional[str] = os.getenv("WANDB_ENTITY"),
     cy_year: int = CURRENT_YEAR,
 ) -> Tuple[dict, dict]:
     """Evaluate a single run for one strategy and margin."""
@@ -432,7 +446,9 @@ def evaluate_single_run(
         raise RuntimeError("wandb is required for evaluate_single_run")
 
     api = wandb.Api()
-    run = api.run(f"grantbell/{wandb_project}/{run_id}")
+    entity = entity or os.getenv("WANDB_ENTITY")
+    prefix = f"{entity}/" if entity else ""
+    run = api.run(f"{prefix}{wandb_project}/{run_id}")
     summary = run.summary._json_dict
     config = {k: v for k, v in run.config.items() if not k.startswith("_")}
     details = {**summary, **config}
@@ -452,7 +468,12 @@ def evaluate_single_run(
         raise ValueError(f"No non-history artifact found for run {run_id}")
     last_artifact_name = art_names[-1]
 
-    model, pipeline = load_model_and_pipeline(run_id, last_artifact_name, wandb_project)
+    model, pipeline = load_model_and_pipeline(
+        run_id,
+        last_artifact_name,
+        wandb_project,
+        entity=entity,
+    )
 
     data, pass_rates, win_percentages, schedules = load_data()
     df_prepared = prepare_df(
