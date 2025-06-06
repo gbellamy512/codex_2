@@ -1,6 +1,6 @@
 pandas
 numpy
-scikit-learn
+scikit-learn==1.6.1  # Using this version for model compatibility; consider upgrading and retraining models with the current release
 tensorflow
 wandb
 joblib
