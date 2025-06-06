@@ -85,3 +85,33 @@ Example:
 ```bash
 python -m nfl_bet.wandb_eval run --project nfl_bet_sweep_8 --top-n 20
 ```
+### Orientation and Bet Type
+
+The training and evaluation commands accept two important arguments:
+
+* `--orientation` selects which side of each matchup is modeled. Use `fav_dog` to frame games by favorite and underdog or `home_away` to model home and away teams directly.
+* `--bet-type` chooses whether the targets are based on straight wins (`moneyline`) or covering the spread (`spread`).
+
+Depending on these choices, different target columns and odds are used. Implied probabilities are derived with `calculate_implied_probabilities()` from the respective odds columns.
+
+| orientation | bet_type | target | odds columns |
+|-------------|---------|--------|--------------|
+| `fav_dog`   | `moneyline` | `dog_win`   | `dog_moneyline` / `fav_moneyline` |
+| `fav_dog`   | `spread`    | `dog_cover` | `dog_spread_odds` / `fav_spread_odds` |
+| `home_away` | `moneyline` | `home_win`  | `home_moneyline` / `away_moneyline` |
+| `home_away` | `spread`    | `home_cover`| `home_spread_odds` / `away_spread_odds` |
+
+#### Training a home/away spread model
+
+```bash
+python -m nfl_bet.wandb_train example --orientation home_away --bet-type spread
+```
+
+#### Evaluating ROI for that model
+
+```bash
+python -m nfl_bet.wandb_eval run \
+    --project nfl_bet_sweep_8 \
+    --orientation home_away \
+    --bet-type spread
+```
