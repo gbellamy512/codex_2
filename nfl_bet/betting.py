@@ -47,6 +47,24 @@ def simple_bet_team(
     return team1_label if row["predictions"] > 0.5 else team2_label
 
 
+def determine_spread_bet_team(
+    row: pd.Series,
+    *,
+    line_col: str,
+    threshold: float = 0.0,
+    team1_label: str = "dog",
+    team2_label: str = "fav",
+) -> str:
+    """Return which side to bet based on predicted margin vs. the spread."""
+    predicted = row["predictions"]
+    line = row[line_col]
+    if predicted > line + threshold:
+        return team1_label
+    if predicted < line - threshold:
+        return team2_label
+    return "none"
+
+
 def calculate_stake(
     row: pd.Series,
     bet_amount: float,
@@ -187,10 +205,14 @@ def evaluate_betting_strategy(
     use_implied_prob: bool = True,
     bet_strat: str = "both",
     margin: float = 0.0,
+    model_type: str = "classification",
+    line_col: str | None = None,
 ) -> dict:
     X = df[features]
     X_norm = pipeline.transform(X)
-    if hasattr(model, "predict_proba"):
+    if model_type == "regression":
+        predictions = model.predict(X_norm)
+    elif hasattr(model, "predict_proba"):
         predictions = model.predict_proba(X_norm)[:, 1]
     else:
         predictions = model.predict(X_norm)
@@ -203,20 +225,35 @@ def evaluate_betting_strategy(
         team1_label=team1_label,
         team2_label=team2_label,
     )
-    if use_implied_prob:
+    if model_type == "regression":
+        if line_col is None:
+            raise ValueError("line_col must be provided for regression models")
         df_eval["bet_team"] = df_eval.apply(
-            determine_bet_team,
-            margin=margin,
+            determine_spread_bet_team,
+            line_col=line_col,
+            threshold=margin,
             team1_label=team1_label,
             team2_label=team2_label,
-            team1_prob_col=f"{team1_label}_implied_prob",
-            team2_prob_col=f"{team2_label}_implied_prob",
             axis=1,
         )
     else:
-        df_eval["bet_team"] = df_eval.apply(
-            simple_bet_team, team1_label=team1_label, team2_label=team2_label, axis=1
-        )
+        if use_implied_prob:
+            df_eval["bet_team"] = df_eval.apply(
+                determine_bet_team,
+                margin=margin,
+                team1_label=team1_label,
+                team2_label=team2_label,
+                team1_prob_col=f"{team1_label}_implied_prob",
+                team2_prob_col=f"{team2_label}_implied_prob",
+                axis=1,
+            )
+        else:
+            df_eval["bet_team"] = df_eval.apply(
+                simple_bet_team,
+                team1_label=team1_label,
+                team2_label=team2_label,
+                axis=1,
+            )
     df_eval["bet"] = df_eval.apply(
         lambda r: calculate_stake(
             r,

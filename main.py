@@ -50,7 +50,14 @@ def main(argv: None | list[str] = None) -> None:
         default="moneyline",
         dest="bet_type",
     )
+    parser.add_argument(
+        "--save-csv",
+        action="store_true",
+        help="Save detailed betting results to betting_results.csv",
+    )
     args = parser.parse_args(argv)
+
+    model_type = "regression" if args.bet_type == "spread" else "classification"
 
     data, pass_rates, win_percentages, schedules = load_data()
     df = prepare_df(
@@ -75,8 +82,13 @@ def main(argv: None | list[str] = None) -> None:
     ]
     context = get_betting_context(args.orientation, args.bet_type)
     cat_features = ["h2h_type", "div_game"]
+    target_col = context["regression_target"] if model_type == "regression" else context["target"]
     model, pipeline, (X_test, y_test) = train_model(
-        df, features, categorical_features=cat_features, target=context["target"]
+        df,
+        features,
+        categorical_features=cat_features,
+        target=target_col,
+        model_type=model_type,
     )
     results = evaluate_betting_strategy(
         df.loc[y_test.index],
@@ -88,7 +100,12 @@ def main(argv: None | list[str] = None) -> None:
         team2_label=context["team2_label"],
         team1_odds_col=context["team1_odds_col"],
         team2_odds_col=context["team2_odds_col"],
+        model_type=model_type,
+        line_col=context.get("line_col"),
     )
+    df_results = results["df"]
+    if args.save_csv:
+        df_results.to_csv("betting_results.csv", index=False)
     print("ROI: {:.2f}%".format(results["roi"]))
 
 

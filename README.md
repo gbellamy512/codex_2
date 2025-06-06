@@ -51,6 +51,8 @@ Execute the default workflow:
 ```bash
 python main.py
 ```
+Add ``--save-csv`` to also write the betting evaluation dataframe to
+``betting_results.csv`` for easy viewing in spreadsheet tools.
 
 ### W&B Training Utilities
 
@@ -105,6 +107,11 @@ For spread bets, ``get_betting_context()`` also returns ``line_col`` and
 ``regression_target``. These point to the appropriate spread column (e.g.,
 ``dog_line`` or ``home_line``) and the numeric margin target (``dog_margin`` or
 ``home_margin``).
+
+When ``--bet-type spread`` is selected the CLI tools automatically switch to a
+regression model. The network's last layer uses a linear activation and MSE loss
+while predictions represent the expected margin. Betting decisions compare this
+margin against the market line plus any supplied threshold.
 
 #### Training a home/away spread model
 

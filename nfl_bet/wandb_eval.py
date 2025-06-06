@@ -141,6 +141,7 @@ def evaluate_betting_results(
 ) -> dict:
     """Return betting metrics for train/val/test and optional current year."""
     ctx = get_betting_context(orientation, bet_type)
+    model_type = "regression" if bet_type == "spread" else "classification"
     train_res = evaluate_betting_strategy(
         df=df_train,
         model=model,
@@ -153,6 +154,8 @@ def evaluate_betting_results(
         team2_label=ctx["team2_label"],
         team1_odds_col=ctx["team1_odds_col"],
         team2_odds_col=ctx["team2_odds_col"],
+        model_type=model_type,
+        line_col=ctx.get("line_col"),
     )
     train_metrics = {
         "train_profit": train_res["total_profit"],
@@ -173,6 +176,8 @@ def evaluate_betting_results(
         team2_label=ctx["team2_label"],
         team1_odds_col=ctx["team1_odds_col"],
         team2_odds_col=ctx["team2_odds_col"],
+        model_type=model_type,
+        line_col=ctx.get("line_col"),
     )
     val_metrics = {
         "val_profit": val_res["total_profit"],
@@ -193,6 +198,8 @@ def evaluate_betting_results(
         team2_label=ctx["team2_label"],
         team1_odds_col=ctx["team1_odds_col"],
         team2_odds_col=ctx["team2_odds_col"],
+        model_type=model_type,
+        line_col=ctx.get("line_col"),
     )
     test_metrics = {
         "test_profit": test_res["total_profit"],
@@ -215,6 +222,8 @@ def evaluate_betting_results(
             team2_label=ctx["team2_label"],
             team1_odds_col=ctx["team1_odds_col"],
             team2_odds_col=ctx["team2_odds_col"],
+            model_type=model_type,
+            line_col=ctx.get("line_col"),
         )
         cy_metrics = {
             "cy_profit": cy_res["total_profit"],
@@ -531,6 +540,7 @@ def evaluate_single_run(
     df_prepared = df_prepared[df_prepared["season"] < cy_year]
 
     target = ctx["target"]
+    model_type = "regression" if bet_type == "spread" else "classification"
     test_size = 0.1
     X_train_df, X_test_df, y_train_df, y_test_df = train_test_split(
         df_prepared[features],
@@ -563,6 +573,8 @@ def evaluate_single_run(
         team2_label=ctx["team2_label"],
         team1_odds_col=ctx["team1_odds_col"],
         team2_odds_col=ctx["team2_odds_col"],
+        model_type=model_type,
+        line_col=ctx.get("line_col"),
     )
     cy_res = evaluate_betting_strategy(
         df=cy_df,
@@ -576,6 +588,8 @@ def evaluate_single_run(
         team2_label=ctx["team2_label"],
         team1_odds_col=ctx["team1_odds_col"],
         team2_odds_col=ctx["team2_odds_col"],
+        model_type=model_type,
+        line_col=ctx.get("line_col"),
     )
     return test_res, cy_res
 
