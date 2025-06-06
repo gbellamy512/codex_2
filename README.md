@@ -101,6 +101,11 @@ Depending on these choices, different target columns and odds are used. Implied 
 | `home_away` | `moneyline` | `home_win`  | `home_moneyline` / `away_moneyline` |
 | `home_away` | `spread`    | `home_cover`| `home_spread_odds` / `away_spread_odds` |
 
+For spread bets, ``get_betting_context()`` also returns ``line_col`` and
+``regression_target``. These point to the appropriate spread column (e.g.,
+``dog_line`` or ``home_line``) and the numeric margin target (``dog_margin`` or
+``home_margin``).
+
 #### Training a home/away spread model
 
 ```bash
