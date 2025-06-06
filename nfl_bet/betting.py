@@ -116,6 +116,47 @@ def calculate_fixed_side_profits(
     return df
 
 
+def get_betting_context(orientation: str, bet_type: str) -> dict:
+    """Return target/odds columns and labels based on orientation and bet type."""
+    orientation = orientation.lower()
+    bet_type = bet_type.lower()
+    if orientation not in {"fav_dog", "home_away"}:
+        raise ValueError(f"Invalid orientation: {orientation}")
+    if bet_type not in {"moneyline", "spread"}:
+        raise ValueError(f"Invalid bet_type: {bet_type}")
+
+    if orientation == "fav_dog":
+        team1_label = "dog"
+        team2_label = "fav"
+        if bet_type == "moneyline":
+            target = "dog_win"
+            team1_odds_col = "dog_moneyline"
+            team2_odds_col = "fav_moneyline"
+        else:
+            target = "dog_cover"
+            team1_odds_col = "dog_spread_odds"
+            team2_odds_col = "fav_spread_odds"
+    else:
+        team1_label = "home"
+        team2_label = "away"
+        if bet_type == "moneyline":
+            target = "home_win"
+            team1_odds_col = "home_moneyline"
+            team2_odds_col = "away_moneyline"
+        else:
+            target = "home_cover"
+            team1_odds_col = "home_spread_odds"
+            team2_odds_col = "away_spread_odds"
+
+    return {
+        "target": target,
+        "team1_label": team1_label,
+        "team2_label": team2_label,
+        "team1_odds_col": team1_odds_col,
+        "team2_odds_col": team2_odds_col,
+    }
+
+
 def evaluate_betting_strategy(
     df: pd.DataFrame,
     model,
