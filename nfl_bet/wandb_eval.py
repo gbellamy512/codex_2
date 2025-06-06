@@ -12,7 +12,7 @@ from sklearn.model_selection import train_test_split
 import tensorflow as tf
 from joblib import load
 
-from . import evaluate_betting_strategy, prepare_df
+from . import evaluate_betting_strategy, prepare_df, get_betting_context
 from .wandb_train import load_data, CURRENT_YEAR
 
 try:
@@ -135,9 +135,12 @@ def evaluate_betting_results(
     df_test: pd.DataFrame,
     bet_strat: str,
     margin: float,
+    orientation: str,
+    bet_type: str,
     cy_df: Optional[pd.DataFrame] = None,
 ) -> dict:
     """Return betting metrics for train/val/test and optional current year."""
+    ctx = get_betting_context(orientation, bet_type)
     train_res = evaluate_betting_strategy(
         df=df_train,
         model=model,
@@ -145,6 +148,11 @@ def evaluate_betting_results(
         pipeline=pipeline,
         bet_strat=bet_strat,
         margin=margin,
+        target=ctx["target"],
+        team1_label=ctx["team1_label"],
+        team2_label=ctx["team2_label"],
+        team1_odds_col=ctx["team1_odds_col"],
+        team2_odds_col=ctx["team2_odds_col"],
     )
     train_metrics = {
         "train_profit": train_res["total_profit"],
@@ -160,6 +168,11 @@ def evaluate_betting_results(
         pipeline=pipeline,
         bet_strat=bet_strat,
         margin=margin,
+        target=ctx["target"],
+        team1_label=ctx["team1_label"],
+        team2_label=ctx["team2_label"],
+        team1_odds_col=ctx["team1_odds_col"],
+        team2_odds_col=ctx["team2_odds_col"],
     )
     val_metrics = {
         "val_profit": val_res["total_profit"],
@@ -175,6 +188,11 @@ def evaluate_betting_results(
         pipeline=pipeline,
         bet_strat=bet_strat,
         margin=margin,
+        target=ctx["target"],
+        team1_label=ctx["team1_label"],
+        team2_label=ctx["team2_label"],
+        team1_odds_col=ctx["team1_odds_col"],
+        team2_odds_col=ctx["team2_odds_col"],
     )
     test_metrics = {
         "test_profit": test_res["total_profit"],
@@ -192,6 +210,11 @@ def evaluate_betting_results(
             pipeline=pipeline,
             bet_strat=bet_strat,
             margin=margin,
+            target=ctx["target"],
+            team1_label=ctx["team1_label"],
+            team2_label=ctx["team2_label"],
+            team1_odds_col=ctx["team1_odds_col"],
+            team2_odds_col=ctx["team2_odds_col"],
         )
         cy_metrics = {
             "cy_profit": cy_res["total_profit"],
@@ -213,6 +236,8 @@ def exe(
     exclude_tested: bool = True,
     pull_high_roi: bool = False,
     entity: Optional[str] = os.getenv("WANDB_ENTITY"),
+    orientation: str = "fav_dog",
+    bet_type: str = "moneyline",
 ) -> pd.DataFrame:
     """Evaluate each run for all strategy/margin combinations."""
     if wandb is None:
@@ -296,6 +321,9 @@ def exe(
             f"  Run Params: random_state={random_state}, min_periods={min_periods}, span={span}"
         )
 
+        orientation_run = row.get("orientation", orientation)
+        bet_type_run = row.get("bet_type", bet_type)
+        ctx = get_betting_context(orientation_run, bet_type_run)
         df_prepared = prepare_df(
             data=data,
             pass_rates=pass_rates,
@@ -303,12 +331,14 @@ def exe(
             schedules=schedules,
             min_periods=min_periods,
             span=span,
+            orientation=orientation_run,
+            bet_type=bet_type_run,
         )
         cy = CURRENT_YEAR
         current_cy_df = df_prepared[df_prepared["season"] == cy].copy()
         df_prepared = df_prepared[df_prepared["season"] < cy]
 
-        target = "dog_win"
+        target = ctx["target"]
         test_size = 0.1
         if df_prepared.empty or len(df_prepared[target].unique()) < 2:
             print(
@@ -365,6 +395,8 @@ def exe(
                     df_test=df_test,
                     bet_strat=bet_strat,
                     margin=margin,
+                    orientation=orientation_run,
+                    bet_type=bet_type_run,
                     cy_df=current_cy_df,
                 )
                 eval_dict.update(
@@ -409,6 +441,8 @@ def run_pipeline(
     pull_high_roi: bool = False,
     metric_threshold: float = 0.60,
     entity: Optional[str] = os.getenv("WANDB_ENTITY"),
+    orientation: str = "fav_dog",
+    bet_type: str = "moneyline",
 ) -> pd.DataFrame:
     """Fetch top runs and evaluate betting ROI."""
     top_runs_df = get_top_runs_quickly(
@@ -428,6 +462,8 @@ def run_pipeline(
         exclude_tested=exclude_tested,
         pull_high_roi=pull_high_roi,
         entity=entity,
+        orientation=orientation,
+        bet_type=bet_type,
     )
     return results_df
 
@@ -440,6 +476,8 @@ def evaluate_single_run(
     wandb_project: str,
     entity: Optional[str] = os.getenv("WANDB_ENTITY"),
     cy_year: int = CURRENT_YEAR,
+    orientation: str = "fav_dog",
+    bet_type: str = "moneyline",
 ) -> Tuple[dict, dict]:
     """Evaluate a single run for one strategy and margin."""
     if wandb is None:
@@ -475,6 +513,9 @@ def evaluate_single_run(
         entity=entity,
     )
 
+    orientation_run = details.get("orientation", orientation)
+    bet_type_run = details.get("bet_type", bet_type)
+    ctx = get_betting_context(orientation_run, bet_type_run)
     data, pass_rates, win_percentages, schedules = load_data()
     df_prepared = prepare_df(
         data=data,
@@ -483,11 +524,13 @@ def evaluate_single_run(
         schedules=schedules,
         min_periods=min_periods,
         span=span,
+        orientation=orientation_run,
+        bet_type=bet_type_run,
     )
     cy_df = df_prepared[df_prepared["season"] == cy_year]
     df_prepared = df_prepared[df_prepared["season"] < cy_year]
 
-    target = "dog_win"
+    target = ctx["target"]
     test_size = 0.1
     X_train_df, X_test_df, y_train_df, y_test_df = train_test_split(
         df_prepared[features],
@@ -515,6 +558,11 @@ def evaluate_single_run(
         pipeline=pipeline,
         bet_strat=bet_strat,
         margin=margin,
+        target=ctx["target"],
+        team1_label=ctx["team1_label"],
+        team2_label=ctx["team2_label"],
+        team1_odds_col=ctx["team1_odds_col"],
+        team2_odds_col=ctx["team2_odds_col"],
     )
     cy_res = evaluate_betting_strategy(
         df=cy_df,
@@ -523,6 +571,11 @@ def evaluate_single_run(
         pipeline=pipeline,
         bet_strat=bet_strat,
         margin=margin,
+        target=ctx["target"],
+        team1_label=ctx["team1_label"],
+        team2_label=ctx["team2_label"],
+        team1_odds_col=ctx["team1_odds_col"],
+        team2_odds_col=ctx["team2_odds_col"],
     )
     return test_res, cy_res
 
@@ -560,6 +613,17 @@ def main(argv: Optional[List[str]] = None) -> None:
     run_p.add_argument("--metric-threshold", type=float, default=0.60)
     run_p.add_argument("--exclude-tested", action="store_true")
     run_p.add_argument("--pull-high-roi", action="store_true")
+    run_p.add_argument(
+        "--orientation",
+        choices=["fav_dog", "home_away"],
+        default="fav_dog",
+    )
+    run_p.add_argument(
+        "--bet-type",
+        choices=["moneyline", "spread"],
+        default="moneyline",
+        dest="bet_type",
+    )
 
     args = parser.parse_args(argv)
     if args.command == "run":
@@ -574,6 +638,8 @@ def main(argv: Optional[List[str]] = None) -> None:
             exclude_tested=args.exclude_tested,
             pull_high_roi=args.pull_high_roi,
             metric_threshold=args.metric_threshold,
+            orientation=args.orientation,
+            bet_type=args.bet_type,
         )
         if results.empty:
             print("No results")

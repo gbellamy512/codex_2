@@ -20,7 +20,7 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.utils.class_weight import compute_class_weight
 
 from .data_prep import prepare_df
-from .betting import evaluate_betting_strategy
+from .betting import evaluate_betting_strategy, get_betting_context
 
 try:
     import wandb
@@ -114,7 +114,10 @@ def evaluate_and_log_metrics_betting(
     *,
     bet_strat: str,
     margin: float,
+    orientation: str,
+    bet_type: str,
 ) -> None:
+    ctx = get_betting_context(orientation, bet_type)
     results = evaluate_betting_strategy(
         dataset,
         model,
@@ -122,6 +125,11 @@ def evaluate_and_log_metrics_betting(
         pipeline=pipeline,
         bet_strat=bet_strat,
         margin=margin,
+        target=ctx["target"],
+        team1_label=ctx["team1_label"],
+        team2_label=ctx["team2_label"],
+        team1_odds_col=ctx["team1_odds_col"],
+        team2_odds_col=ctx["team2_odds_col"],
     )
     if wandb is not None:
         wandb.log({
@@ -141,6 +149,9 @@ def train(config: Optional[dict] = None) -> None:
 
     with wandb.init(config=config):
         cfg = wandb.config
+        orientation = getattr(cfg, "orientation", "fav_dog")
+        bet_type = getattr(cfg, "bet_type", "moneyline")
+        wandb.log({"orientation": orientation, "bet_type": bet_type})
 
         data, pass_rates, win_percentages, schedules = load_data()
         df = prepare_df(
@@ -151,7 +162,11 @@ def train(config: Optional[dict] = None) -> None:
             min_periods=cfg.min_periods,
             span=cfg.span,
             avg_method="simple",
+            orientation=orientation,
+            bet_type=bet_type,
         )
+
+        ctx = get_betting_context(orientation, bet_type)
 
         cy_df = df[df["season"] == CURRENT_YEAR]
         df = df[df["season"] < CURRENT_YEAR]
@@ -172,9 +187,9 @@ def train(config: Optional[dict] = None) -> None:
 
         X_train_df, X_test_df, y_train_df, y_test_df = train_test_split(
             df[features],
-            df[cfg.target],
+            df[ctx["target"]],
             test_size=cfg.test_size,
-            stratify=df[cfg.target],
+            stratify=df[ctx["target"]],
             random_state=random_state,
         )
         X_train_df, X_val_df, y_train_df, y_val_df = train_test_split(
@@ -285,7 +300,7 @@ def train(config: Optional[dict] = None) -> None:
         evaluate_and_log_metrics(model, X_test, y_test, "test")
 
         X_cy = cy_df[features]
-        y_cy = cy_df[cfg.target]
+        y_cy = cy_df[ctx["target"]]
         X_cy = pipeline.transform(X_cy)
         y_cy = y_cy.values
         evaluate_and_log_metrics(model, X_cy, y_cy, "cy")
@@ -295,7 +310,12 @@ def train(config: Optional[dict] = None) -> None:
 # Sweep utilities
 # ---------------------------------------------------------------------------
 
-def create_sweep(project: Optional[str] = None) -> str:
+def create_sweep(
+    project: Optional[str] = None,
+    *,
+    orientation: str = "fav_dog",
+    bet_type: str = "moneyline",
+) -> str:
     """Create a W&B sweep using hyperparameter ranges.
 
     The configuration mirrors the sweep setup from the original notebook.
@@ -373,7 +393,8 @@ def create_sweep(project: Optional[str] = None) -> str:
     parameters_dict.update(
         {
             "gpu_name": {"value": gpu_name},
-            "target": {"value": "dog_win"},
+            "orientation": {"value": orientation},
+            "bet_type": {"value": bet_type},
             "loss": {"value": "binary_crossentropy"},
             "metric": {"value": "accuracy"},
             "optimizer": {"value": "adam"},
@@ -406,13 +427,14 @@ def run_sweep(sweep_id: str, *, count: int = 1) -> None:
 # Example entry point
 # ---------------------------------------------------------------------------
 
-def example_run() -> None:
+def example_run(orientation: str = "fav_dog", bet_type: str = "moneyline") -> None:
     if wandb is None:
         raise ImportError("wandb must be installed to run the example")
 
     default_config = {
         "project": "nfl_bet_example",
-        "target": "dog_win",
+        "orientation": orientation,
+        "bet_type": bet_type,
         "test_size": 0.2,
         "epochs": 1,
         "batch_size": 64,
@@ -451,7 +473,18 @@ def main(argv: Optional[list[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="NFL betting training utils")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("example", help="run the example training run")
+    ex_p = sub.add_parser("example", help="run the example training run")
+    ex_p.add_argument(
+        "--orientation",
+        choices=["fav_dog", "home_away"],
+        default="fav_dog",
+    )
+    ex_p.add_argument(
+        "--bet-type",
+        choices=["moneyline", "spread"],
+        default="moneyline",
+        dest="bet_type",
+    )
 
     sweep_parser = sub.add_parser(
         "sweep", help="create a hyperparameter sweep and run it"
@@ -467,13 +500,26 @@ def main(argv: Optional[list[str]] = None) -> None:
         default=int(os.getenv("WANDB_SWEEP_COUNT", "1")),
         help="Number of sweep runs to execute",
     )
+    sweep_parser.add_argument(
+        "--orientation",
+        choices=["fav_dog", "home_away"],
+        default="fav_dog",
+    )
+    sweep_parser.add_argument(
+        "--bet-type",
+        choices=["moneyline", "spread"],
+        default="moneyline",
+        dest="bet_type",
+    )
 
     args = parser.parse_args(argv)
 
     if args.command == "example":
-        example_run()
+        example_run(orientation=args.orientation, bet_type=args.bet_type)
     elif args.command == "sweep":
-        sid = create_sweep(project=args.project)
+        sid = create_sweep(
+            project=args.project, orientation=args.orientation, bet_type=args.bet_type
+        )
         run_sweep(sid, count=args.count)
 
 

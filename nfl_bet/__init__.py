@@ -1,5 +1,9 @@
 from .data_prep import prepare_df
-from .betting import evaluate_betting_strategy, implied_probability
+from .betting import (
+    evaluate_betting_strategy,
+    implied_probability,
+    get_betting_context,
+)
 from .modeling import train_model
 from .wandb_train import train
 
@@ -7,6 +11,7 @@ __all__ = [
     "prepare_df",
     "evaluate_betting_strategy",
     "implied_probability",
+    "get_betting_context",
     "train_model",
     "train",
 ]

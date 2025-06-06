@@ -1,5 +1,11 @@
+import argparse
 import pandas as pd
-from nfl_bet import prepare_df, train_model, evaluate_betting_strategy
+from nfl_bet import (
+    prepare_df,
+    train_model,
+    evaluate_betting_strategy,
+    get_betting_context,
+)
 
 DATA_DIR = "data"
 FIRST_YEAR = 2013
@@ -31,7 +37,21 @@ def load_data():
     return data, pass_rates, win_percentages, schedules
 
 
-def main():
+def main(argv: None | list[str] = None) -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--orientation",
+        choices=["fav_dog", "home_away"],
+        default="fav_dog",
+    )
+    parser.add_argument(
+        "--bet-type",
+        choices=["moneyline", "spread"],
+        default="moneyline",
+        dest="bet_type",
+    )
+    args = parser.parse_args(argv)
+
     data, pass_rates, win_percentages, schedules = load_data()
     df = prepare_df(
         data=data,
@@ -39,6 +59,8 @@ def main():
         win_percentages=win_percentages,
         schedules=schedules,
         avg_method="simple",
+        orientation=args.orientation,
+        bet_type=args.bet_type,
     )
     features = [
         "rushing_offense_adv",
@@ -51,13 +73,21 @@ def main():
         "div_game",
         "h2h_type",
     ]
+    context = get_betting_context(args.orientation, args.bet_type)
     cat_features = ["h2h_type", "div_game"]
-    model, pipeline, (X_test, y_test) = train_model(df, features, categorical_features=cat_features)
+    model, pipeline, (X_test, y_test) = train_model(
+        df, features, categorical_features=cat_features, target=context["target"]
+    )
     results = evaluate_betting_strategy(
         df.loc[y_test.index],
         model,
         features=features,
         pipeline=pipeline,
+        target=context["target"],
+        team1_label=context["team1_label"],
+        team2_label=context["team2_label"],
+        team1_odds_col=context["team1_odds_col"],
+        team2_odds_col=context["team2_odds_col"],
     )
     print("ROI: {:.2f}%".format(results["roi"]))
 
