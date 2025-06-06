@@ -117,13 +117,22 @@ def calculate_fixed_side_profits(
 
 
 def get_betting_context(orientation: str, bet_type: str) -> dict:
-    """Return target/odds columns and labels based on orientation and bet type."""
+    """Return context information for the specified orientation and bet type.
+
+    The dictionary always includes classification targets and odds columns.
+    When ``bet_type`` is ``spread`` additional keys ``line_col`` and
+    ``regression_target`` identify the spread line and the margin column used for
+    regression style models.
+    """
     orientation = orientation.lower()
     bet_type = bet_type.lower()
     if orientation not in {"fav_dog", "home_away"}:
         raise ValueError(f"Invalid orientation: {orientation}")
     if bet_type not in {"moneyline", "spread"}:
         raise ValueError(f"Invalid bet_type: {bet_type}")
+
+    line_col = None
+    regression_target = None
 
     if orientation == "fav_dog":
         team1_label = "dog"
@@ -134,6 +143,8 @@ def get_betting_context(orientation: str, bet_type: str) -> dict:
             team2_odds_col = "fav_moneyline"
         else:
             target = "dog_cover"
+            regression_target = "dog_margin"
+            line_col = "dog_line"
             team1_odds_col = "dog_spread_odds"
             team2_odds_col = "fav_spread_odds"
     else:
@@ -145,6 +156,8 @@ def get_betting_context(orientation: str, bet_type: str) -> dict:
             team2_odds_col = "away_moneyline"
         else:
             target = "home_cover"
+            regression_target = "home_margin"
+            line_col = "home_line"
             team1_odds_col = "home_spread_odds"
             team2_odds_col = "away_spread_odds"
 
@@ -154,6 +167,8 @@ def get_betting_context(orientation: str, bet_type: str) -> dict:
         "team2_label": team2_label,
         "team1_odds_col": team1_odds_col,
         "team2_odds_col": team2_odds_col,
+        "line_col": line_col,
+        "regression_target": regression_target,
     }
 
 
