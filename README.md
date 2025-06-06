@@ -41,3 +41,47 @@ This project is designed to predict NFL game outcomes and to evaluate associated
 ## W&B Usage
 
 Evaluation and training utilities use Weights & Biases for experiment tracking. If your runs live under a specific W&B entity (organization or username), set the `WANDB_ENTITY` environment variable so the scripts can locate artifacts and runs across accounts.
+
+## Running the Scripts
+
+### Baseline
+
+Execute the default workflow:
+
+```bash
+python main.py
+```
+
+### W&B Training Utilities
+
+Run an example training job (uses the built-in defaults):
+
+```bash
+python -m nfl_bet.wandb_train example
+```
+
+To start a sweep, specify the project name (default `nfl_bet_sweep`) and how many runs to execute (default `1`):
+
+```bash
+python -m nfl_bet.wandb_train sweep --project nfl_bet_sweep --count 1
+```
+
+### W&B Evaluation Utilities
+
+Evaluate the top runs of a W&B project. All arguments shown below are optional with their default values:
+
+```bash
+python -m nfl_bet.wandb_eval run \
+    --project nfl_bet_sweep_8 \
+    --top-metric loss \
+    --top-n 10 \
+    --train-weight 1.0 \
+    --metric-threshold 0.60 \
+    [--exclude-tested] [--pull-high-roi]
+```
+
+Example:
+
+```bash
+python -m nfl_bet.wandb_eval run --project nfl_bet_sweep_8 --top-n 20
+```
