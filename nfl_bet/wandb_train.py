@@ -118,6 +118,7 @@ def evaluate_and_log_metrics_betting(
     bet_type: str,
 ) -> None:
     ctx = get_betting_context(orientation, bet_type)
+    model_type = "regression" if bet_type == "spread" else "classification"
     results = evaluate_betting_strategy(
         dataset,
         model,
@@ -130,6 +131,8 @@ def evaluate_and_log_metrics_betting(
         team2_label=ctx["team2_label"],
         team1_odds_col=ctx["team1_odds_col"],
         team2_odds_col=ctx["team2_odds_col"],
+        model_type=model_type,
+        line_col=ctx.get("line_col"),
     )
     if wandb is not None:
         wandb.log({
@@ -151,7 +154,9 @@ def train(config: Optional[dict] = None) -> None:
         cfg = wandb.config
         orientation = getattr(cfg, "orientation", "fav_dog")
         bet_type = getattr(cfg, "bet_type", "moneyline")
-        wandb.log({"orientation": orientation, "bet_type": bet_type})
+        model_type = "regression" if bet_type == "spread" else "classification"
+        wandb.config.update({"model_type": model_type}, allow_val_change=True)
+        wandb.log({"orientation": orientation, "bet_type": bet_type, "model_type": model_type})
 
         data, pass_rates, win_percentages, schedules = load_data()
         df = prepare_df(
@@ -185,18 +190,20 @@ def train(config: Optional[dict] = None) -> None:
         random_state = random.randint(0, 1000)
         wandb.log({"random_state": random_state})
 
+        target_col = ctx["regression_target"] if model_type == "regression" else ctx["target"]
+        stratify_col = df[target_col] if model_type == "classification" else None
         X_train_df, X_test_df, y_train_df, y_test_df = train_test_split(
             df[features],
-            df[ctx["target"]],
+            df[target_col],
             test_size=cfg.test_size,
-            stratify=df[ctx["target"]],
+            stratify=stratify_col,
             random_state=random_state,
         )
         X_train_df, X_val_df, y_train_df, y_val_df = train_test_split(
             X_train_df,
             y_train_df,
             test_size=cfg.test_size,
-            stratify=y_train_df,
+            stratify=y_train_df if model_type == "classification" else None,
             random_state=random_state,
         )
 
@@ -230,7 +237,8 @@ def train(config: Optional[dict] = None) -> None:
                 )
             )
         model.add(tf.keras.layers.Dropout(cfg.dropout))
-        model.add(tf.keras.layers.Dense(1, activation=cfg.outer_activation))
+        final_activation = None if model_type == "regression" else cfg.outer_activation
+        model.add(tf.keras.layers.Dense(1, activation=final_activation))
 
         if cfg.optimizer == "sgd":
             momentum_value = float(cfg.sgd_momentum)
@@ -244,10 +252,17 @@ def train(config: Optional[dict] = None) -> None:
         else:
             raise ValueError(f"Unsupported optimizer: {cfg.optimizer}")
 
+        if model_type == "regression":
+            loss = "mse"
+            metrics = ["mse"]
+        else:
+            loss = cfg.loss
+            metrics = [cfg.metric, precision_metric, recall_metric]
+
         model.compile(
             optimizer=optimizer,
-            loss=cfg.loss,
-            metrics=[cfg.metric, precision_metric, recall_metric],
+            loss=loss,
+            metrics=metrics,
         )
 
         callbacks = [WandbMetricsLogger()]
@@ -395,12 +410,13 @@ def create_sweep(
             "gpu_name": {"value": gpu_name},
             "orientation": {"value": orientation},
             "bet_type": {"value": bet_type},
-            "loss": {"value": "binary_crossentropy"},
-            "metric": {"value": "accuracy"},
+            "model_type": {"value": "regression" if bet_type == "spread" else "classification"},
+            "loss": {"value": "mse" if bet_type == "spread" else "binary_crossentropy"},
+            "metric": {"value": "mse" if bet_type == "spread" else "accuracy"},
             "optimizer": {"value": "adam"},
             "kernel_initializer": {"value": "he_normal"},
             "activation": {"value": "relu"},
-            "outer_activation": {"value": "sigmoid"},
+            "outer_activation": {"value": "linear" if bet_type == "spread" else "sigmoid"},
             "epochs": {"value": 200},
             "early_stopping": {"value": True},
             "apply_lr_schedule": {"value": True},
@@ -435,6 +451,7 @@ def example_run(orientation: str = "fav_dog", bet_type: str = "moneyline") -> No
         "project": "nfl_bet_example",
         "orientation": orientation,
         "bet_type": bet_type,
+        "model_type": "regression" if bet_type == "spread" else "classification",
         "test_size": 0.2,
         "epochs": 1,
         "batch_size": 64,
@@ -464,6 +481,11 @@ def example_run(orientation: str = "fav_dog", bet_type: str = "moneyline") -> No
         "bet_strat": "both",
         "margin": 0.0,
     }
+    if bet_type == "spread":
+        default_config["outer_activation"] = "linear"
+        default_config["loss"] = "mse"
+        default_config["metric"] = "mse"
+        default_config["model_type"] = "regression"
     train(default_config)
 
 
