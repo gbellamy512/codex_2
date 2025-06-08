@@ -44,48 +44,88 @@ Evaluation and training utilities use Weights & Biases for experiment tracking. 
 
 ## Running the Scripts
 
-### Baseline
+### `main.py`
 
-Execute the default workflow:
+Quickly train a model and evaluate ROI. See
+[Orientation and Bet Type](#orientation-and-bet-type) for how the
+`--orientation` and `--bet-type` options affect the targets.
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `--orientation` | `fav_dog` | matchup framing |
+| `--bet-type` | `moneyline` | wager type |
+| `--save-csv` | `False` | write `betting_results.csv` |
+
+Minimal example:
 
 ```bash
 python main.py
 ```
-Add ``--save-csv`` to also write the betting evaluation dataframe to
-``betting_results.csv`` for easy viewing in spreadsheet tools.
 
-### W&B Training Utilities
+All parameters:
 
-Run an example training job (uses the built-in defaults):
+```bash
+python main.py --orientation home_away --bet-type spread --save-csv
+```
+
+### `python -m nfl_bet.wandb_train`
+
+Utilities for running training jobs with optional W&B sweeps.
+
+**example** subcommand
+
+| Argument | Default |
+|----------|---------|
+| `--orientation` | `fav_dog` |
+| `--bet-type` | `moneyline` |
+
+**sweep** subcommand
+
+| Argument | Default |
+|----------|---------|
+| `--project` | env `WANDB_SWEEP_PROJECT` or `nfl_bet_sweep` |
+| `--count` | env `WANDB_SWEEP_COUNT` or `1` |
+| `--orientation` | `fav_dog` |
+| `--bet-type` | `moneyline` |
+
+Minimal example:
 
 ```bash
 python -m nfl_bet.wandb_train example
 ```
 
-To start a sweep, specify the project name (default `nfl_bet_sweep`) and how many runs to execute (default `1`):
+All parameters:
 
 ```bash
-python -m nfl_bet.wandb_train sweep --project nfl_bet_sweep --count 1
+python -m nfl_bet.wandb_train sweep --project nfl_bet_sweep --count 3 --orientation home_away --bet-type spread
 ```
 
-### W&B Evaluation Utilities
+### `python -m nfl_bet.wandb_eval`
 
-Evaluate the top runs of a W&B project. All arguments shown below are optional with their default values:
+Evaluate the top runs of a W&B project.
+
+| Argument | Default |
+|----------|---------|
+| `--project` | `nfl_bet_sweep_8` |
+| `--top-metric` | `loss` |
+| `--top-n` | `10` |
+| `--train-weight` | `1.0` |
+| `--metric-threshold` | `0.60` |
+| `--exclude-tested` | `False` |
+| `--pull-high-roi` | `False` |
+| `--orientation` | `fav_dog` |
+| `--bet-type` | `moneyline` |
+
+Minimal example:
 
 ```bash
-python -m nfl_bet.wandb_eval run \
-    --project nfl_bet_sweep_8 \
-    --top-metric loss \
-    --top-n 10 \
-    --train-weight 1.0 \
-    --metric-threshold 0.60 \
-    [--exclude-tested] [--pull-high-roi]
+python -m nfl_bet.wandb_eval run
 ```
 
-Example:
+All parameters:
 
 ```bash
-python -m nfl_bet.wandb_eval run --project nfl_bet_sweep_8 --top-n 20
+python -m nfl_bet.wandb_eval run --project nfl_bet_sweep_8 --top-metric loss --top-n 10 --train-weight 1.0 --metric-threshold 0.60 --exclude-tested --pull-high-roi --orientation home_away --bet-type spread
 ```
 ### Orientation and Bet Type
 
