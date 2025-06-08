@@ -1,4 +1,5 @@
 import argparse
+import os
 import pandas as pd
 from nfl_bet import (
     prepare_df,
@@ -8,6 +9,7 @@ from nfl_bet import (
 )
 
 DATA_DIR = "data"
+RESULTS_DIR = "results"
 FIRST_YEAR = 2013
 CURRENT_YEAR = 2024
 
@@ -53,7 +55,10 @@ def main(argv: None | list[str] = None) -> None:
     parser.add_argument(
         "--save-csv",
         action="store_true",
-        help="Save detailed betting results to betting_results.csv",
+        help=(
+            "Save detailed betting results to "
+            "results/betting_results_<orientation>_<bet-type>.csv"
+        ),
     )
     args = parser.parse_args(argv)
 
@@ -105,7 +110,9 @@ def main(argv: None | list[str] = None) -> None:
     )
     df_results = results["df"]
     if args.save_csv:
-        df_results.to_csv("betting_results.csv", index=False)
+        os.makedirs(RESULTS_DIR, exist_ok=True)
+        out_path = f"{RESULTS_DIR}/betting_results_{args.orientation}_{args.bet_type}.csv"
+        df_results.to_csv(out_path, index=False)
     print("ROI: {:.2f}%".format(results["roi"]))
 
 
