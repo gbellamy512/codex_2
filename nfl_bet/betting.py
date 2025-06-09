@@ -119,18 +119,36 @@ def calculate_fixed_side_profits(
 ) -> pd.DataFrame:
     """Compute profits if always betting on a given side."""
     df = df.copy()
-    df[f"{team1_label}_profit"] = df.apply(
-        lambda r: bet_amount * (r[team1_odds_col] / 100)
-        if r[outcome_col] == 1
-        else -bet_amount,
-        axis=1,
-    )
-    df[f"{team2_label}_profit"] = df.apply(
-        lambda r: bet_amount * (100 / abs(r[team2_odds_col]))
-        if r[outcome_col] == 0
-        else -bet_amount,
-        axis=1,
-    )
+
+    def payout(odds: float) -> float:
+        return bet_amount * (100 / -odds) if odds < 0 else bet_amount * (odds / 100)
+
+    def check_push(row: pd.Series) -> bool:
+        margin_cols = [f"{team1_label}_margin", f"{team2_label}_margin"]
+        for col in margin_cols:
+            if col in row.index and row[col] == 0:
+                return True
+        if {"home_score", "away_score"}.issubset(row.index):
+            if row["home_score"] == row["away_score"]:
+                return True
+        return False
+
+    def team1_profit(row: pd.Series) -> float:
+        if check_push(row):
+            return 0.0
+        if row[outcome_col] == 1:
+            return payout(row[team1_odds_col])
+        return -bet_amount
+
+    def team2_profit(row: pd.Series) -> float:
+        if check_push(row):
+            return 0.0
+        if row[outcome_col] == 0:
+            return payout(row[team2_odds_col])
+        return -bet_amount
+
+    df[f"{team1_label}_profit"] = df.apply(team1_profit, axis=1)
+    df[f"{team2_label}_profit"] = df.apply(team2_profit, axis=1)
     return df
 
 
