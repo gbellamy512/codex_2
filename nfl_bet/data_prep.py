@@ -61,6 +61,21 @@ def add_h2h(data: pd.DataFrame) -> pd.DataFrame:
 
 
 def determine_favorite(row):
+    """Return the favorite and underdog teams for a given row.
+
+    The point spread is used first to decide the favorite. If ``spread_line`` is
+    positive, the home team is favored, while a negative ``spread_line`` means
+    the away team is favored. When ``spread_line`` is zero the money line odds
+    are used as a tiebreaker, mirroring the previous behaviour.
+    """
+
+    # Prefer the spread line to determine the favorite/underdog
+    if row["spread_line"] > 0:
+        return "home", "away"
+    if row["spread_line"] < 0:
+        return "away", "home"
+
+    # Fall back to money line odds when the spread is even
     if row["home_moneyline"] < row["away_moneyline"]:
         return "home", "away"
     if row["away_moneyline"] < row["home_moneyline"]:
@@ -179,6 +194,7 @@ def prepare_df(
     df["away_line"] = df["spread_line"]
 
     if orientation == "fav_dog":
+        # Determine favorite/underdog using the spread when available
         df[["favorite", "dog"]] = df.apply(determine_favorite, axis=1, result_type="expand")
         df["dog_home"] = df["favorite"].apply(lambda x: 1 if x == "away" else 0)
 
