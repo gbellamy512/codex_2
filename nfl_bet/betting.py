@@ -353,6 +353,24 @@ def filter_results_df(df: pd.DataFrame, features: list[str], orientation: str, b
         team1, team2 = "home", "away"
         result_col = "home_win" if bet_type == "moneyline" else "home_cover"
 
+    if bet_type == "moneyline":
+        team1_odds_col = f"{team1}_moneyline"
+        team2_odds_col = f"{team2}_moneyline"
+    else:
+        team1_odds_col = f"{team1}_spread_odds"
+        team2_odds_col = f"{team2}_spread_odds"
+
+    prob1_col = f"{team1}_implied_prob"
+    prob2_col = f"{team2}_implied_prob"
+    if prob1_col not in df.columns or prob2_col not in df.columns:
+        df = calculate_implied_probabilities(
+            df,
+            team1_odds_col=team1_odds_col,
+            team2_odds_col=team2_odds_col,
+            team1_label=team1,
+            team2_label=team2,
+        )
+
     cols = [
         "season",
         "week",
@@ -364,9 +382,10 @@ def filter_results_df(df: pd.DataFrame, features: list[str], orientation: str, b
     ]
 
     if bet_type == "moneyline":
-        cols += [f"{team1}_moneyline", f"{team2}_moneyline"]
+        cols += [team1_odds_col, team2_odds_col]
     else:
-        cols += ["spread_line", f"{team1}_spread_odds", f"{team2}_spread_odds"]
+        cols += ["spread_line", team1_odds_col, team2_odds_col]
 
+    cols += [prob1_col, prob2_col, "predictions"]
     cols += list(features) + ["bet_team", "bet", "profit"]
     return df[[c for c in cols if c in df.columns]].copy()
