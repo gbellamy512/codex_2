@@ -171,18 +171,20 @@ def get_betting_context(orientation: str, bet_type: str) -> dict:
     regression_target = None
 
     if orientation == "fav_dog":
-        team1_label = "dog"
-        team2_label = "fav"
         if bet_type == "moneyline":
+            team1_label = "dog"
+            team2_label = "fav"
             target = "dog_win"
             team1_odds_col = "dog_moneyline"
             team2_odds_col = "fav_moneyline"
         else:
-            target = "dog_cover"
-            regression_target = "dog_margin"
-            line_col = "dog_line"
-            team1_odds_col = "dog_spread_odds"
-            team2_odds_col = "fav_spread_odds"
+            team1_label = "fav"
+            team2_label = "dog"
+            target = "fav_cover"
+            regression_target = "fav_margin"
+            line_col = "fav_line"
+            team1_odds_col = "fav_spread_odds"
+            team2_odds_col = "dog_spread_odds"
     else:
         team1_label = "home"
         team2_label = "away"

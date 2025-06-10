@@ -190,8 +190,8 @@ def prepare_df(
     )
     df = add_h2h(df)
     df.dropna(inplace=True)
-    df["home_line"] = -df["spread_line"]
-    df["away_line"] = df["spread_line"]
+    df["home_line"] = df["spread_line"]
+    df["away_line"] = -df["spread_line"]
 
     if orientation == "fav_dog":
         # Determine favorite/underdog using the spread when available
@@ -225,9 +225,14 @@ def prepare_df(
         df["dog_win"] = df.apply(lambda row: 1 if row["dog_score"] > row["fav_score"] else 0, axis=1)
 
         if bet_type == "spread":
-            df["dog_margin"] = df["dog_score"] + df["dog_line"] - df["fav_score"]
+            df["dog_margin"] = df["dog_score"] - df["dog_line"] - df["fav_score"]
+            df["fav_margin"] = df["fav_score"] - df["fav_line"] - df["dog_score"]
             df["dog_cover"] = df.apply(
                 lambda row: 1 if row["dog_margin"] > 0 else 0,
+                axis=1,
+            )
+            df["fav_cover"] = df.apply(
+                lambda row: 1 if row["fav_margin"] > 0 else 0,
                 axis=1,
             )
             df["fav_implied_prob"] = df["fav_spread_odds"].apply(implied_probability)
@@ -269,7 +274,7 @@ def prepare_df(
     else:
         df["home_win"] = df["home_team_win"]
         if bet_type == "spread":
-            df["home_margin"] = df["home_score"] + df["home_line"] - df["away_score"]
+            df["home_margin"] = df["home_score"] - df["home_line"] - df["away_score"]
             df["home_cover"] = df.apply(
                 lambda row: 1 if row["home_margin"] > 0 else 0,
                 axis=1,

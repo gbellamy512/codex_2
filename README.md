@@ -140,13 +140,13 @@ Depending on these choices, different target columns and odds are used. Implied 
 | orientation | bet_type | target | odds columns |
 |-------------|---------|--------|--------------|
 | `fav_dog`   | `moneyline` | `dog_win`   | `dog_moneyline` / `fav_moneyline` |
-| `fav_dog`   | `spread`    | `dog_cover` | `dog_spread_odds` / `fav_spread_odds` |
+| `fav_dog`   | `spread`    | `fav_cover` | `fav_spread_odds` / `dog_spread_odds` |
 | `home_away` | `moneyline` | `home_win`  | `home_moneyline` / `away_moneyline` |
 | `home_away` | `spread`    | `home_cover`| `home_spread_odds` / `away_spread_odds` |
 
 For spread bets, ``get_betting_context()`` also returns ``line_col`` and
 ``regression_target``. These point to the appropriate spread column (e.g.,
-``dog_line`` or ``home_line``) and the numeric margin target (``dog_margin`` or
+``fav_line`` or ``home_line``) and the numeric margin target (``fav_margin`` or
 ``home_margin``).
 
 When ``--bet-type spread`` is selected the CLI tools automatically switch to a
