@@ -3,6 +3,7 @@ from .betting import (
     evaluate_betting_strategy,
     implied_probability,
     get_betting_context,
+    filter_results_df,
 )
 from .modeling import train_model
 from .wandb_train import train
@@ -12,6 +13,7 @@ __all__ = [
     "evaluate_betting_strategy",
     "implied_probability",
     "get_betting_context",
+    "filter_results_df",
     "train_model",
     "train",
 ]

@@ -1,3 +1,10 @@
+"""Betting utilities.
+
+The :func:`evaluate_betting_strategy` helper returns a DataFrame containing a
+large number of columns. Use :func:`filter_results_df` to trim that DataFrame to
+the key information typically saved in result CSVs.
+"""
+
 import pandas as pd
 
 
@@ -316,3 +323,50 @@ def evaluate_betting_strategy(
         "df": df_eval,
         "bet_rate": 100 * len(df_eval[df_eval["bet"] > 0]) / len(df_eval),
     }
+
+
+def filter_results_df(df: pd.DataFrame, features: list[str], orientation: str, bet_type: str) -> pd.DataFrame:
+    """Return a trimmed version of the betting results DataFrame.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame returned in the ``df`` key of :func:`evaluate_betting_strategy`.
+    features : list[str]
+        List of feature column names used for modeling.
+    orientation : str
+        Either ``"fav_dog"`` or ``"home_away"``.
+    bet_type : str
+        ``"moneyline"`` or ``"spread"``.
+    """
+    orientation = orientation.lower()
+    bet_type = bet_type.lower()
+    if orientation not in {"fav_dog", "home_away"}:
+        raise ValueError(f"Invalid orientation: {orientation}")
+    if bet_type not in {"moneyline", "spread"}:
+        raise ValueError(f"Invalid bet_type: {bet_type}")
+
+    if orientation == "fav_dog":
+        team1, team2 = "fav", "dog"
+        result_col = "dog_win" if bet_type == "moneyline" else "fav_cover"
+    else:
+        team1, team2 = "home", "away"
+        result_col = "home_win" if bet_type == "moneyline" else "home_cover"
+
+    cols = [
+        "season",
+        "week",
+        f"{team1}_team",
+        f"{team2}_team",
+        f"{team1}_score",
+        f"{team2}_score",
+        result_col,
+    ]
+
+    if bet_type == "moneyline":
+        cols += [f"{team1}_moneyline", f"{team2}_moneyline"]
+    else:
+        cols += ["spread_line", f"{team1}_spread_odds", f"{team2}_spread_odds"]
+
+    cols += list(features) + ["bet_team", "bet", "profit"]
+    return df[[c for c in cols if c in df.columns]].copy()

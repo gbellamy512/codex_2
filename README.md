@@ -168,3 +168,15 @@ python -m nfl_bet.wandb_eval run \
     --orientation home_away \
     --bet-type spread
 ```
+
+### Filtering betting results
+
+`evaluate_betting_strategy()` returns a full DataFrame of per-game details in
+the `df` key. Use `filter_results_df()` to keep only the most relevant columns
+when writing CSVs:
+
+```python
+from nfl_bet.betting import filter_results_df
+trimmed = filter_results_df(results["df"], FEATURES, orientation, bet_type)
+trimmed.to_csv("results.csv", index=False)
+```
