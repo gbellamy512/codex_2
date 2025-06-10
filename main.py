@@ -6,6 +6,7 @@ from nfl_bet import (
     train_model,
     evaluate_betting_strategy,
     get_betting_context,
+    filter_results_df,
 )
 
 DATA_DIR = "data"
@@ -110,9 +111,15 @@ def main(argv: None | list[str] = None) -> None:
     )
     df_results = results["df"]
     if args.save_csv:
+        df_trimmed = filter_results_df(
+            df_results,
+            features,
+            args.orientation,
+            args.bet_type,
+        )
         os.makedirs(RESULTS_DIR, exist_ok=True)
         out_path = f"{RESULTS_DIR}/betting_results_{args.orientation}_{args.bet_type}.csv"
-        df_results.to_csv(out_path, index=False)
+        df_trimmed.to_csv(out_path, index=False)
     print("ROI: {:.2f}%".format(results["roi"]))
 
 
