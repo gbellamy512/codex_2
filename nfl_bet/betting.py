@@ -381,11 +381,16 @@ def filter_results_df(df: pd.DataFrame, features: list[str], orientation: str, b
         result_col,
     ]
 
+    # cols += list(features) + ["bet_team", "bet", "profit"]
+    cols += list(features)
+
     if bet_type == "moneyline":
         cols += [team1_odds_col, team2_odds_col]
     else:
         cols += ["spread_line", team1_odds_col, team2_odds_col]
 
     cols += [prob1_col, prob2_col, "predictions"]
-    cols += list(features) + ["bet_team", "bet", "profit"]
+
+    cols += ["bet_team", "bet", "profit"]
+
     return df[[c for c in cols if c in df.columns]].copy()
