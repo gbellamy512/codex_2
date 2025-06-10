@@ -1,1 +1,18 @@
 results/
+__pycache__/
+*.py[cod]
+# Virtual environments
+env/
+venv/
+.venv/
+# Packaging
+build/
+dist/
+*.egg-info/
+# Tools
+wandb/
+.pytest_cache/
+.coverage
+# OS/editor files
+.DS_Store
+.vscode/
