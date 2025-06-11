@@ -86,6 +86,7 @@ Utilities for running training jobs with optional W&B sweeps.
 
 | Argument | Default |
 |----------|---------|
+| `--project` | required |
 | `--orientation` | `fav_dog` |
 | `--bet-type` | `moneyline` |
 
@@ -93,15 +94,15 @@ Utilities for running training jobs with optional W&B sweeps.
 
 | Argument | Default |
 |----------|---------|
-| `--project` | env `WANDB_SWEEP_PROJECT` or `nfl_bet_sweep` |
-| `--count` | env `WANDB_SWEEP_COUNT` or `1` |
+| `--project` | required |
+| `--count` | `50` |
 | `--orientation` | `fav_dog` |
 | `--bet-type` | `moneyline` |
 
 Minimal example:
 
 ```bash
-python -m nfl_bet.wandb_train example
+python -m nfl_bet.wandb_train example --project my_project
 ```
 
 All parameters:
@@ -166,7 +167,10 @@ margin against the market line plus any supplied margin.
 #### Training a home/away spread model
 
 ```bash
-python -m nfl_bet.wandb_train example --orientation home_away --bet-type spread
+python -m nfl_bet.wandb_train example \
+    --project my_project \
+    --orientation home_away \
+    --bet-type spread
 ```
 
 #### Evaluating ROI for that model
