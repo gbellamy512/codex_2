@@ -316,7 +316,7 @@ def train(config: Optional[dict] = None) -> None:
             lr_scheduler_cb = tf.keras.callbacks.LearningRateScheduler(scheduler)
             callbacks.append(lr_scheduler_cb)
 
-        if cfg.apply_class_weights:
+        if model_type == "classification" and cfg.apply_class_weights:
             class_weights = compute_class_weight(
                 class_weight="balanced", classes=np.unique(y_train), y=y_train
             )
