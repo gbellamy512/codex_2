@@ -741,10 +741,12 @@ def main(argv: Optional[List[str]] = None) -> None:
         )
         out_dir = args.output or RESULTS_DIR
         os.makedirs(out_dir, exist_ok=True)
-        test_path = os.path.join(out_dir, f"{args.run_id}_test_preds.csv")
+        # test_path = os.path.join(out_dir, f"{args.run_id}_test_preds.csv")
+        test_path = os.path.join(out_dir, f"{args.run_id}_test_preds_{args.orientation}_{args.bet_type}_{args.margin}.csv")
         test_res["df"].to_csv(test_path, index=False)
         print(f"Test ROI: {test_res['roi']:.2f}% -> {test_path}")
-        cy_path = os.path.join(out_dir, f"{args.run_id}_cy_preds.csv")
+        # cy_path = os.path.join(out_dir, f"{args.run_id}_cy_preds.csv")
+        cy_path = os.path.join(out_dir, f"{args.run_id}_cy_preds_{args.orientation}_{args.bet_type}_{args.margin}.csv")
         cy_res["df"].to_csv(cy_path, index=False)
         print(f"Current year ROI: {cy_res['roi']:.2f}% -> {cy_path}")
 
