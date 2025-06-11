@@ -346,7 +346,7 @@ def train(config: Optional[dict] = None) -> None:
         evaluate_and_log_metrics(model, X_test, y_test, "test", model_type)
 
         X_cy = cy_df[features]
-        y_cy = cy_df[ctx["target"]]
+        y_cy = cy_df[target_col]
         X_cy = pipeline.transform(X_cy)
         y_cy = y_cy.values
         evaluate_and_log_metrics(model, X_cy, y_cy, "cy", model_type)
