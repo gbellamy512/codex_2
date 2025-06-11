@@ -121,11 +121,12 @@ Evaluate the top runs of a W&B project.
 | `--top-metric` | `loss` |
 | `--top-n` | `10` |
 | `--train-weight` | `1.0` |
-| `--metric-threshold` | `0.60` |
+| `--metric-threshold` | `0.60` (moneyline) / `175.0` (spread) |
 | `--exclude-tested` | `False` |
 | `--pull-high-roi` | `False` |
 | `--orientation` | `fav_dog` |
 | `--bet-type` | `moneyline` |
+When `--bet-type spread` is used, the evaluation checks default margins [0, 0.5, 1, 1.5, 2] and applies a higher default --metric-threshold (175.0) because regression losses are measured in points.
 
 Minimal example:
 

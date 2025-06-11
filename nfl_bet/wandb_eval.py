@@ -257,7 +257,7 @@ def exe(
     if bet_strats is None:
         bet_strats = ["both", "dog", "fav"]
     if margins is None:
-        margins = [0.025, 0.05, 0.075, 0.1]
+        margins = [0, 0.5, 1, 1.5, 2] if bet_type == "spread" else [0.025, 0.05, 0.075, 0.1]
 
     data, pass_rates, win_percentages, schedules = load_data()
 
@@ -450,12 +450,21 @@ def run_pipeline(
     cy_df: Optional[pd.DataFrame] = None,
     exclude_tested: bool = True,
     pull_high_roi: bool = False,
-    metric_threshold: float = 0.60,
+    metric_threshold: Optional[float] = None,
     entity: Optional[str] = os.getenv("WANDB_ENTITY"),
     orientation: str = "fav_dog",
     bet_type: str = "moneyline",
 ) -> pd.DataFrame:
     """Fetch top runs and evaluate betting ROI."""
+    if bet_type == "spread":
+        if margins is None:
+            margins = [0, 0.5, 1, 1.5, 2]
+        metric_threshold = 175.0 if metric_threshold is None else metric_threshold
+    else:
+        if margins is None:
+            margins = [0.025, 0.05, 0.075, 0.1]
+        metric_threshold = 0.60 if metric_threshold is None else metric_threshold
+
     top_runs_df = get_top_runs_quickly(
         wandb_project=wandb_project,
         metric=top_metric,
@@ -644,7 +653,7 @@ def main(argv: Optional[List[str]] = None) -> None:
     run_p.add_argument("--top-metric", default="loss", help="metric to rank runs")
     run_p.add_argument("--top-n", type=int, default=10, help="number of runs")
     run_p.add_argument("--train-weight", type=float, default=1.0)
-    run_p.add_argument("--metric-threshold", type=float, default=0.60)
+    run_p.add_argument("--metric-threshold", type=float)
     run_p.add_argument("--exclude-tested", action="store_true")
     run_p.add_argument("--pull-high-roi", action="store_true")
     run_p.add_argument(
@@ -667,8 +676,6 @@ def main(argv: Optional[List[str]] = None) -> None:
             top_metric=args.top_metric,
             top_n=args.top_n,
             train_weight=args.train_weight,
-            bet_strats=["dog", "fav"],
-            margins=[0.025, 0.05, 0.075, 0.1],
             exclude_tested=args.exclude_tested,
             pull_high_roi=args.pull_high_roi,
             metric_threshold=args.metric_threshold,
