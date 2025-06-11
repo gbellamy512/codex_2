@@ -113,11 +113,13 @@ python -m nfl_bet.wandb_train sweep --project nfl_bet_sweep --count 3 --orientat
 
 ### `python -m nfl_bet.wandb_eval`
 
-Evaluate the top runs of a W&B project.
+Utilities for evaluating W&B runs.
+
+**runs** subcommand
 
 | Argument | Default |
 |----------|---------|
-| `--project` | `nfl_bet_sweep_8` |
+| `--project` | required |
 | `--top-metric` | `loss` |
 | `--top-n` | `10` |
 | `--train-weight` | `1.0` |
@@ -126,18 +128,42 @@ Evaluate the top runs of a W&B project.
 | `--pull-high-roi` | `False` |
 | `--orientation` | `fav_dog` |
 | `--bet-type` | `moneyline` |
-When `--bet-type spread` is used, the evaluation checks default margins [0, 0.5, 1, 1.5, 2] and applies a higher default --metric-threshold (175.0) because regression losses are measured in points.
+When `--bet-type spread` is used, the evaluation checks default margins [0, 0.5, 1, 1.5, 2] and applies a higher default `--metric-threshold` (175.0) because regression losses are measured in points.
 
 Minimal example:
 
 ```bash
-python -m nfl_bet.wandb_eval run
+python -m nfl_bet.wandb_eval runs --project my_project
 ```
 
 All parameters:
 
 ```bash
-python -m nfl_bet.wandb_eval run --project nfl_bet_sweep_8 --top-metric loss --top-n 10 --train-weight 1.0 --metric-threshold 0.60 --exclude-tested --pull-high-roi --orientation home_away --bet-type spread
+python -m nfl_bet.wandb_eval runs --project nfl_bet_sweep_8 --top-metric loss --top-n 10 --train-weight 1.0 --metric-threshold 0.60 --exclude-tested --pull-high-roi --orientation home_away --bet-type spread
+```
+
+**single** subcommand
+
+| Argument | Default |
+|----------|---------|
+| `--project` | required |
+| `--run-id` | required |
+| `--bet-strat` | required |
+| `--margin` | required |
+| `--orientation` | `fav_dog` |
+| `--bet-type` | `moneyline` |
+| `--output` | `results` |
+
+Minimal example:
+
+```bash
+python -m nfl_bet.wandb_eval single --project my_project --run-id ABC123 --bet-strat both --margin 0.05
+```
+
+All parameters:
+
+```bash
+python -m nfl_bet.wandb_eval single --project my_project --run-id ABC123 --bet-strat fav --margin 1.0 --orientation home_away --bet-type spread --output custom_dir
 ```
 ### Orientation and Bet Type
 

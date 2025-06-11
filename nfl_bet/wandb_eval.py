@@ -240,7 +240,7 @@ def evaluate_betting_results(
 def exe(
     df_runs_epochs: pd.DataFrame,
     features: List[str],
-    wandb_project: str = "nfl_bet_sweep_8",
+    wandb_project: str,
     bet_strats: Optional[List[str]] = None,
     margins: Optional[List[float]] = None,
     cy_df: Optional[pd.DataFrame] = None,
@@ -659,20 +659,20 @@ def aggregated_roi_table(df: pd.DataFrame) -> pd.DataFrame:
 def main(argv: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="W&B evaluation utilities")
     sub = parser.add_subparsers(dest="command", required=True)
-    run_p = sub.add_parser("run", help="evaluate top runs and show ROI table")
-    run_p.add_argument("--project", default="nfl_bet_sweep_8", help="W&B project")
-    run_p.add_argument("--top-metric", default="loss", help="metric to rank runs")
-    run_p.add_argument("--top-n", type=int, default=10, help="number of runs")
-    run_p.add_argument("--train-weight", type=float, default=1.0)
-    run_p.add_argument("--metric-threshold", type=float)
-    run_p.add_argument("--exclude-tested", action="store_true")
-    run_p.add_argument("--pull-high-roi", action="store_true")
-    run_p.add_argument(
+    runs_p = sub.add_parser("runs", help="evaluate top runs and show ROI table")
+    runs_p.add_argument("--project", required=True, help="W&B project")
+    runs_p.add_argument("--top-metric", default="loss", help="metric to rank runs")
+    runs_p.add_argument("--top-n", type=int, default=10, help="number of runs")
+    runs_p.add_argument("--train-weight", type=float, default=1.0)
+    runs_p.add_argument("--metric-threshold", type=float)
+    runs_p.add_argument("--exclude-tested", action="store_true")
+    runs_p.add_argument("--pull-high-roi", action="store_true")
+    runs_p.add_argument(
         "--orientation",
         choices=["fav_dog", "home_away"],
         default="fav_dog",
     )
-    run_p.add_argument(
+    runs_p.add_argument(
         "--bet-type",
         choices=["moneyline", "spread"],
         default="moneyline",
@@ -705,7 +705,7 @@ def main(argv: Optional[List[str]] = None) -> None:
     )
 
     args = parser.parse_args(argv)
-    if args.command == "run":
+    if args.command == "runs":
         results = run_pipeline(
             wandb_project=args.project,
             features=DEFAULT_FEATURES,
