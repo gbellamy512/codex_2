@@ -670,12 +670,12 @@ def main(argv: Optional[List[str]] = None) -> None:
     runs_p.add_argument(
         "--orientation",
         choices=["fav_dog", "home_away"],
-        default="fav_dog",
+        required=True,
     )
     runs_p.add_argument(
         "--bet-type",
         choices=["moneyline", "spread"],
-        default="moneyline",
+        required=True,
         dest="bet_type",
     )
 
@@ -685,17 +685,17 @@ def main(argv: Optional[List[str]] = None) -> None:
     )
     single_p.add_argument("--project", required=True, help="W&B project")
     single_p.add_argument("--run-id", required=True, help="run id")
-    single_p.add_argument("--bet-strat", required=True, help="betting strategy")
-    single_p.add_argument("--margin", type=float, required=True)
+    single_p.add_argument("--bet-strat", default="both", help="betting strategy")
+    single_p.add_argument("--margin", type=float, default=0.0)
     single_p.add_argument(
         "--orientation",
         choices=["fav_dog", "home_away"],
-        default="fav_dog",
+        required=True,
     )
     single_p.add_argument(
         "--bet-type",
         choices=["moneyline", "spread"],
-        default="moneyline",
+        required=True,
         dest="bet_type",
     )
     single_p.add_argument(

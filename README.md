@@ -87,8 +87,8 @@ Utilities for running training jobs with optional W&B sweeps.
 | Argument | Default |
 |----------|---------|
 | `--project` | required |
-| `--orientation` | `fav_dog` |
-| `--bet-type` | `moneyline` |
+| `--orientation` | required |
+| `--bet-type` | required |
 
 **sweep** subcommand
 
@@ -96,8 +96,8 @@ Utilities for running training jobs with optional W&B sweeps.
 |----------|---------|
 | `--project` | required |
 | `--count` | `50` |
-| `--orientation` | `fav_dog` |
-| `--bet-type` | `moneyline` |
+| `--orientation` | required |
+| `--bet-type` | required |
 
 Minimal example:
 
@@ -126,14 +126,14 @@ Utilities for evaluating W&B runs.
 | `--metric-threshold` | `0.60` (moneyline) / `175.0` (spread) |
 | `--exclude-tested` | `False` |
 | `--pull-high-roi` | `False` |
-| `--orientation` | `fav_dog` |
-| `--bet-type` | `moneyline` |
+| `--orientation` | required |
+| `--bet-type` | required |
 When `--bet-type spread` is used, the evaluation checks default margins [0, 0.5, 1, 1.5, 2] and applies a higher default `--metric-threshold` (175.0) because regression losses are measured in points.
 
 Minimal example:
 
 ```bash
-python -m nfl_bet.wandb_eval runs --project my_project
+python -m nfl_bet.wandb_eval runs --project my_project --orientation fav_dog --bet-type moneyline
 ```
 
 All parameters:
@@ -148,16 +148,16 @@ python -m nfl_bet.wandb_eval runs --project nfl_bet_sweep_8 --top-metric loss --
 |----------|---------|
 | `--project` | required |
 | `--run-id` | required |
-| `--bet-strat` | required |
-| `--margin` | required |
-| `--orientation` | `fav_dog` |
-| `--bet-type` | `moneyline` |
+| `--bet-strat` | `both` |
+| `--margin` | `0` |
+| `--orientation` | required |
+| `--bet-type` | required |
 | `--output` | `results` |
 
 Minimal example:
 
 ```bash
-python -m nfl_bet.wandb_eval single --project my_project --run-id ABC123 --bet-strat both --margin 0.05
+python -m nfl_bet.wandb_eval single --project my_project --run-id ABC123 --orientation fav_dog --bet-type moneyline
 ```
 
 All parameters:
