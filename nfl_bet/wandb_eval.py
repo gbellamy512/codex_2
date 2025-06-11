@@ -679,6 +679,31 @@ def main(argv: Optional[List[str]] = None) -> None:
         dest="bet_type",
     )
 
+    single_p = sub.add_parser(
+        "single",
+        help="evaluate one run and write prediction CSVs",
+    )
+    single_p.add_argument("--project", required=True, help="W&B project")
+    single_p.add_argument("--run-id", required=True, help="run id")
+    single_p.add_argument("--bet-strat", required=True, help="betting strategy")
+    single_p.add_argument("--margin", type=float, required=True)
+    single_p.add_argument(
+        "--orientation",
+        choices=["fav_dog", "home_away"],
+        default="fav_dog",
+    )
+    single_p.add_argument(
+        "--bet-type",
+        choices=["moneyline", "spread"],
+        default="moneyline",
+        dest="bet_type",
+    )
+    single_p.add_argument(
+        "--output",
+        default=RESULTS_DIR,
+        help="directory to save prediction CSVs",
+    )
+
     args = parser.parse_args(argv)
     if args.command == "run":
         results = run_pipeline(
@@ -704,6 +729,24 @@ def main(argv: Optional[List[str]] = None) -> None:
             print("No runs met filter criteria")
         else:
             print(filtered.reset_index(drop=True).to_string(index=False))
+    elif args.command == "single":
+        test_res, cy_res = evaluate_single_run(
+            run_id=args.run_id,
+            features=DEFAULT_FEATURES,
+            bet_strat=args.bet_strat,
+            margin=args.margin,
+            wandb_project=args.project,
+            orientation=args.orientation,
+            bet_type=args.bet_type,
+        )
+        out_dir = args.output or RESULTS_DIR
+        os.makedirs(out_dir, exist_ok=True)
+        test_path = os.path.join(out_dir, f"{args.run_id}_test_preds.csv")
+        test_res["df"].to_csv(test_path, index=False)
+        print(f"Test ROI: {test_res['roi']:.2f}% -> {test_path}")
+        cy_path = os.path.join(out_dir, f"{args.run_id}_cy_preds.csv")
+        cy_res["df"].to_csv(cy_path, index=False)
+        print(f"Current year ROI: {cy_res['roi']:.2f}% -> {cy_path}")
 
 
 if __name__ == "__main__":  # pragma: no cover
