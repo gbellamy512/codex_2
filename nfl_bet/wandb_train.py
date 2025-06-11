@@ -89,19 +89,47 @@ def get_activation(name: str):
     return name
 
 
-def evaluate_and_log_metrics(model, X, y, tag: str) -> Dict[str, float]:
-    loss, accuracy, precision, recall = model.evaluate(X, y, verbose=0)
-    f1 = 2 * (precision * recall) / (precision + recall) if precision + recall else 0
-    metrics = {
-        "loss": loss,
-        "accuracy": accuracy,
-        "precision": precision,
-        "recall": recall,
-        "f1": f1,
-        "len": len(X),
-    }
+def evaluate_and_log_metrics(
+    model, X, y, tag: str, model_type: str
+) -> Dict[str, float]:
+    """Evaluate a model on ``X``/``y`` and log metrics via W&B.
+
+    Parameters
+    ----------
+    model : keras.Model
+        The model to evaluate.
+    X, y : array-like
+        Evaluation data.
+    tag : str
+        Prefix used when logging metrics.
+    model_type : {"classification", "regression"}
+        Determines which metrics to expect and log.
+    """
+
+    results = model.evaluate(X, y, verbose=0)
+
+    if model_type == "classification":
+        loss, accuracy, precision, recall = results
+        f1 = (
+            2 * (precision * recall) / (precision + recall)
+            if precision + recall
+            else 0
+        )
+        metrics = {
+            "loss": loss,
+            "accuracy": accuracy,
+            "precision": precision,
+            "recall": recall,
+            "f1": f1,
+            "len": len(X),
+        }
+    else:  # regression
+        loss, mse = results
+        metrics = {"loss": loss, "mse": mse, "len": len(X)}
+
     if wandb is not None:
         wandb.log({f"{tag}_" + k: v for k, v in metrics.items()})
+
     return metrics
 
 
@@ -313,15 +341,15 @@ def train(config: Optional[dict] = None) -> None:
         artifact.add_file(model_file)
         wandb.log_artifact(artifact)
 
-        evaluate_and_log_metrics(model, X_train, y_train, "train")
-        evaluate_and_log_metrics(model, X_val, y_val, "val")
-        evaluate_and_log_metrics(model, X_test, y_test, "test")
+        evaluate_and_log_metrics(model, X_train, y_train, "train", model_type)
+        evaluate_and_log_metrics(model, X_val, y_val, "val", model_type)
+        evaluate_and_log_metrics(model, X_test, y_test, "test", model_type)
 
         X_cy = cy_df[features]
         y_cy = cy_df[ctx["target"]]
         X_cy = pipeline.transform(X_cy)
         y_cy = y_cy.values
-        evaluate_and_log_metrics(model, X_cy, y_cy, "cy")
+        evaluate_and_log_metrics(model, X_cy, y_cy, "cy", model_type)
 
 
 # ---------------------------------------------------------------------------
