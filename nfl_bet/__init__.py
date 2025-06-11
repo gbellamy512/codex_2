@@ -24,7 +24,6 @@ from .wandb_eval import (
     evaluate_betting_results,
     exe,
     evaluate_single_run,
-    aggregated_roi_table,
 )
 
 __all__.extend([
@@ -34,5 +33,4 @@ __all__.extend([
     "evaluate_betting_results",
     "exe",
     "evaluate_single_run",
-    "aggregated_roi_table",
 ])

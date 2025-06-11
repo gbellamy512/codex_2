@@ -15,6 +15,8 @@ from joblib import load
 from . import evaluate_betting_strategy, prepare_df, get_betting_context
 from .wandb_train import load_data, CURRENT_YEAR
 
+RESULTS_DIR = "results"
+
 try:
     import wandb  # type: ignore
 except Exception:  # pragma: no cover - optional wandb
@@ -610,6 +612,24 @@ DEFAULT_FEATURES = [
 ]
 
 
+def filter_eval_results(
+    df: pd.DataFrame, roi_min: float = 10.0, bet_rate_min: float = 6.0
+) -> pd.DataFrame:
+    """Filter evaluation results and keep best per run and strategy."""
+    roi_cols = ["train_roi", "val_roi", "test_roi"]
+    filt = (df[roi_cols] >= roi_min).all(axis=1) & (df["test_bet_rate"] >= bet_rate_min)
+    df = df.loc[filt].copy()
+    if df.empty:
+        return df
+    df["avg_roi"] = df[roi_cols].mean(axis=1)
+    df = (
+        df.sort_values("avg_roi", ascending=False)
+        .drop_duplicates(subset=["run_id", "bet_strat"], keep="first")
+        .sort_values("avg_roi", ascending=False)
+    )
+    return df.drop(columns="avg_roi")
+
+
 def aggregated_roi_table(df: pd.DataFrame) -> pd.DataFrame:
     """Return mean ROI by strategy and margin."""
     roi_cols = [c for c in ["train_roi", "val_roi", "test_roi", "cy_roi"] if c in df.columns]
@@ -658,8 +678,14 @@ def main(argv: Optional[List[str]] = None) -> None:
         if results.empty:
             print("No results")
             return
-        table = aggregated_roi_table(results)
-        print(table.reset_index().to_string(index=False))
+        os.makedirs(RESULTS_DIR, exist_ok=True)
+        out_path = f"{RESULTS_DIR}/wandb_eval_{args.orientation}_{args.bet_type}.csv"
+        results.to_csv(out_path, index=False)
+        filtered = filter_eval_results(results)
+        if filtered.empty:
+            print("No runs met filter criteria")
+        else:
+            print(filtered.reset_index(drop=True).to_string(index=False))
 
 
 if __name__ == "__main__":  # pragma: no cover
