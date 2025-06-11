@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import random
 from pathlib import Path
 from typing import Optional, Dict
@@ -326,7 +325,7 @@ def train(config: Optional[dict] = None) -> None:
 # ---------------------------------------------------------------------------
 
 def create_sweep(
-    project: Optional[str] = None,
+    project: str,
     *,
     orientation: str = "fav_dog",
     bet_type: str = "moneyline",
@@ -334,14 +333,13 @@ def create_sweep(
     """Create a W&B sweep using hyperparameter ranges.
 
     The configuration mirrors the sweep setup from the original notebook.
-    ``project`` defaults to the ``WANDB_SWEEP_PROJECT`` environment variable or
-    ``"nfl_bet_sweep"``.
+    ``project`` must be provided explicitly.
     """
 
     if wandb is None:
         raise ImportError("wandb must be installed to create a sweep")
 
-    project_name = project or os.getenv("WANDB_SWEEP_PROJECT", "nfl_bet_sweep")
+    project_name = project
 
     sweep_config: Dict[str, object] = {
         "method": "bayes",
@@ -431,7 +429,7 @@ def create_sweep(
     return sweep_id
 
 
-def run_sweep(sweep_id: str, *, count: int = 1) -> None:
+def run_sweep(sweep_id: str, *, count: int = 50) -> None:
     """Launch a W&B sweep agent."""
 
     if wandb is None:
@@ -443,12 +441,12 @@ def run_sweep(sweep_id: str, *, count: int = 1) -> None:
 # Example entry point
 # ---------------------------------------------------------------------------
 
-def example_run(orientation: str = "fav_dog", bet_type: str = "moneyline") -> None:
+def example_run(project: str, orientation: str = "fav_dog", bet_type: str = "moneyline") -> None:
     if wandb is None:
         raise ImportError("wandb must be installed to run the example")
 
     default_config = {
-        "project": "nfl_bet_example",
+        "project": project,
         "orientation": orientation,
         "bet_type": bet_type,
         "model_type": "regression" if bet_type == "spread" else "classification",
@@ -497,6 +495,11 @@ def main(argv: Optional[list[str]] = None) -> None:
 
     ex_p = sub.add_parser("example", help="run the example training run")
     ex_p.add_argument(
+        "--project",
+        required=True,
+        help="W&B project name",
+    )
+    ex_p.add_argument(
         "--orientation",
         choices=["fav_dog", "home_away"],
         default="fav_dog",
@@ -513,13 +516,13 @@ def main(argv: Optional[list[str]] = None) -> None:
     )
     sweep_parser.add_argument(
         "--project",
-        default=os.getenv("WANDB_SWEEP_PROJECT", "nfl_bet_sweep"),
+        required=True,
         help="W&B project name",
     )
     sweep_parser.add_argument(
         "--count",
         type=int,
-        default=int(os.getenv("WANDB_SWEEP_COUNT", "1")),
+        default=50,
         help="Number of sweep runs to execute",
     )
     sweep_parser.add_argument(
@@ -537,7 +540,11 @@ def main(argv: Optional[list[str]] = None) -> None:
     args = parser.parse_args(argv)
 
     if args.command == "example":
-        example_run(orientation=args.orientation, bet_type=args.bet_type)
+        example_run(
+            project=args.project,
+            orientation=args.orientation,
+            bet_type=args.bet_type,
+        )
     elif args.command == "sweep":
         sid = create_sweep(
             project=args.project, orientation=args.orientation, bet_type=args.bet_type
