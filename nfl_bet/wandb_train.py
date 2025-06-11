@@ -149,7 +149,11 @@ def train(config: Optional[dict] = None) -> None:
     if wandb is None:
         raise ImportError("wandb must be installed to use the train function")
 
-    with wandb.init(config=config):
+    project = None
+    if config is not None:
+        project = config.get("project")
+
+    with wandb.init(project=project, config=config):
         cfg = wandb.config
         orientation = getattr(cfg, "orientation", "fav_dog")
         bet_type = getattr(cfg, "bet_type", "moneyline")
