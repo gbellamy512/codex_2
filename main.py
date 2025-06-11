@@ -40,40 +40,27 @@ def load_data():
     return data, pass_rates, win_percentages, schedules
 
 
-def main(argv: None | list[str] = None) -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--orientation",
-        choices=["fav_dog", "home_away"],
-        default="fav_dog",
-    )
-    parser.add_argument(
-        "--bet-type",
-        choices=["moneyline", "spread"],
-        default="moneyline",
-        dest="bet_type",
-    )
-    parser.add_argument(
-        "--save-csv",
-        action="store_true",
-        help=(
-            "Save detailed betting results to "
-            "results/betting_results_<orientation>_<bet-type>.csv"
-        ),
-    )
-    args = parser.parse_args(argv)
+def run_once(
+    orientation: str,
+    bet_type: str,
+    *,
+    data: pd.DataFrame,
+    pass_rates: pd.DataFrame,
+    win_percentages: pd.DataFrame,
+    schedules: pd.DataFrame,
+    save_csv: bool = False,
+) -> None:
+    """Train and evaluate a single orientation/bet type combination."""
+    model_type = "regression" if bet_type == "spread" else "classification"
 
-    model_type = "regression" if args.bet_type == "spread" else "classification"
-
-    data, pass_rates, win_percentages, schedules = load_data()
     df = prepare_df(
         data=data,
         pass_rates=pass_rates,
         win_percentages=win_percentages,
         schedules=schedules,
         avg_method="simple",
-        orientation=args.orientation,
-        bet_type=args.bet_type,
+        orientation=orientation,
+        bet_type=bet_type,
     )
     features = [
         "rushing_offense_adv",
@@ -86,9 +73,11 @@ def main(argv: None | list[str] = None) -> None:
         "div_game",
         "h2h_type",
     ]
-    context = get_betting_context(args.orientation, args.bet_type)
+    context = get_betting_context(orientation, bet_type)
     cat_features = ["h2h_type", "div_game"]
-    target_col = context["regression_target"] if model_type == "regression" else context["target"]
+    target_col = (
+        context["regression_target"] if model_type == "regression" else context["target"]
+    )
     model, pipeline, (X_test, y_test) = train_model(
         df,
         features,
@@ -110,17 +99,75 @@ def main(argv: None | list[str] = None) -> None:
         line_col=context.get("line_col"),
     )
     df_results = results["df"]
-    if args.save_csv:
+    if save_csv:
         df_trimmed = filter_results_df(
             df_results,
             features,
-            args.orientation,
-            args.bet_type,
+            orientation,
+            bet_type,
         )
         os.makedirs(RESULTS_DIR, exist_ok=True)
-        out_path = f"{RESULTS_DIR}/betting_results_{args.orientation}_{args.bet_type}.csv"
+        out_path = f"{RESULTS_DIR}/betting_results_{orientation}_{bet_type}.csv"
         df_trimmed.to_csv(out_path, index=False)
-    print("ROI: {:.2f}%".format(results["roi"]))
+    print(f"{orientation} {bet_type} ROI: {results['roi']:.2f}%")
+
+
+def main(argv: None | list[str] = None) -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--orientation",
+        choices=["fav_dog", "home_away"],
+        default="fav_dog",
+    )
+    parser.add_argument(
+        "--bet-type",
+        choices=["moneyline", "spread"],
+        default="moneyline",
+        dest="bet_type",
+    )
+    parser.add_argument(
+        "--save-csv",
+        action="store_true",
+        help=(
+            "Save detailed betting results to "
+            "results/betting_results_<orientation>_<bet-type>.csv"
+        ),
+    )
+    parser.add_argument(
+        "--run-all",
+        action="store_true",
+        help="Run all orientation/bet-type combinations sequentially",
+    )
+    args = parser.parse_args(argv)
+    data, pass_rates, win_percentages, schedules = load_data()
+
+    if args.run_all:
+        combos = [
+            ("fav_dog", "moneyline"),
+            ("fav_dog", "spread"),
+            ("home_away", "moneyline"),
+            ("home_away", "spread"),
+        ]
+        for orientation, bet_type in combos:
+            run_once(
+                orientation,
+                bet_type,
+                data=data,
+                pass_rates=pass_rates,
+                win_percentages=win_percentages,
+                schedules=schedules,
+                save_csv=True,
+            )
+    else:
+        run_once(
+            args.orientation,
+            args.bet_type,
+            data=data,
+            pass_rates=pass_rates,
+            win_percentages=win_percentages,
+            schedules=schedules,
+            save_csv=args.save_csv,
+        )
 
 
 if __name__ == "__main__":

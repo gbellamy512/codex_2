@@ -55,6 +55,7 @@ Quickly train a model and evaluate ROI. See
 | `--orientation` | `fav_dog` | matchup framing |
 | `--bet-type` | `moneyline` | wager type |
 | `--save-csv` | `False` | write `results/betting_results_<orientation>_<bet-type>.csv` |
+| `--run-all` | `False` | run every orientation and bet type combo |
 
 Minimal example:
 
@@ -68,6 +69,13 @@ All parameters:
 python main.py --orientation home_away --bet-type spread --save-csv
 ```
 This writes `results/betting_results_home_away_spread.csv`.
+
+Running all combinations:
+
+```bash
+python main.py --run-all
+```
+This writes four CSVs for every orientation and bet type pair.
 
 ### `python -m nfl_bet.wandb_train`
 
