@@ -48,6 +48,7 @@ def run_once(
     pass_rates: pd.DataFrame,
     win_percentages: pd.DataFrame,
     schedules: pd.DataFrame,
+    margin: float = 0.0,
     save_csv: bool = False,
 ) -> None:
     """Train and evaluate a single orientation/bet type combination."""
@@ -90,6 +91,7 @@ def run_once(
         model,
         features=features,
         pipeline=pipeline,
+        margin=margin,
         target=context["target"],
         team1_label=context["team1_label"],
         team2_label=context["team2_label"],
@@ -138,6 +140,12 @@ def main(argv: None | list[str] = None) -> None:
         action="store_true",
         help="Run all orientation/bet-type combinations sequentially",
     )
+    parser.add_argument(
+        "--margin",
+        type=float,
+        default=0.0,
+        help="Minimum edge required to place a bet",
+    )
     args = parser.parse_args(argv)
     data, pass_rates, win_percentages, schedules = load_data()
 
@@ -156,6 +164,7 @@ def main(argv: None | list[str] = None) -> None:
                 pass_rates=pass_rates,
                 win_percentages=win_percentages,
                 schedules=schedules,
+                margin=args.margin,
                 save_csv=True,
             )
     else:
@@ -166,6 +175,7 @@ def main(argv: None | list[str] = None) -> None:
             pass_rates=pass_rates,
             win_percentages=win_percentages,
             schedules=schedules,
+            margin=args.margin,
             save_csv=args.save_csv,
         )
 

@@ -58,16 +58,31 @@ def determine_spread_bet_team(
     row: pd.Series,
     *,
     line_col: str,
-    threshold: float = 0.0,
+    margin: float = 0.0,
     team1_label: str = "dog",
     team2_label: str = "fav",
 ) -> str:
-    """Return which side to bet based on predicted margin vs. the spread."""
+    """Return which side to bet based on predicted margin vs. the spread.
+
+    Parameters
+    ----------
+    row : pd.Series
+        Row containing model predictions and the spread line column.
+    line_col : str
+        Name of the column with the market spread line.
+    margin : float, optional
+        Minimum edge over the market line required to place a bet. Defaults to
+        ``0.0``.
+    team1_label : str, optional
+        Label for the team when betting on the side predicted to cover.
+    team2_label : str, optional
+        Label for the opposite team.
+    """
     predicted = row["predictions"]
     line = row[line_col]
-    if predicted > line + threshold:
+    if predicted > line + margin:
         return team1_label
-    if predicted < line - threshold:
+    if predicted < line - margin:
         return team2_label
     return "none"
 
@@ -258,7 +273,7 @@ def evaluate_betting_strategy(
         df_eval["bet_team"] = df_eval.apply(
             determine_spread_bet_team,
             line_col=line_col,
-            threshold=margin,
+            margin=margin,
             team1_label=team1_label,
             team2_label=team2_label,
             axis=1,

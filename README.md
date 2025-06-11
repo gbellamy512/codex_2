@@ -55,6 +55,7 @@ Quickly train a model and evaluate ROI. See
 | `--orientation` | `fav_dog` | matchup framing |
 | `--bet-type` | `moneyline` | wager type |
 | `--save-csv` | `False` | write `results/betting_results_<orientation>_<bet-type>.csv` |
+| `--margin` | `0.0` | minimum edge required to place a bet |
 | `--run-all` | `False` | run every orientation and bet type combo |
 
 Minimal example:
@@ -66,7 +67,7 @@ python main.py
 All parameters:
 
 ```bash
-python main.py --orientation home_away --bet-type spread --save-csv
+python main.py --orientation home_away --bet-type spread --margin 0.05 --save-csv
 ```
 This writes `results/betting_results_home_away_spread.csv`.
 
@@ -160,7 +161,7 @@ For spread bets, ``get_betting_context()`` also returns ``line_col`` and
 When ``--bet-type spread`` is selected the CLI tools automatically switch to a
 regression model. The network's last layer uses a linear activation and MSE loss
 while predictions represent the expected margin. Betting decisions compare this
-margin against the market line plus any supplied threshold.
+margin against the market line plus any supplied margin.
 
 #### Training a home/away spread model
 
