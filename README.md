@@ -184,6 +184,17 @@ python -m nfl_bet.wandb_eval run \
     --bet-type spread
 ```
 
+#### Saving predictions for a single run
+
+```bash
+python -m nfl_bet.wandb_eval single \
+    --project nfl_bet_sweep_8 \
+    --run-id <RUN_ID> \
+    --bet-strat both \
+    --margin 0.05
+```
+This writes `results/<RUN_ID>_test_preds.csv` and `results/<RUN_ID>_cy_preds.csv`.
+
 ### Filtering betting results
 
 `evaluate_betting_strategy()` returns a full DataFrame of per-game details in
