@@ -11,6 +11,9 @@ dist/
 *.egg-info/
 # Tools
 wandb/
+artifacts/
+pipeline.pkl
+model.keras
 .pytest_cache/
 .coverage
 # OS/editor files
