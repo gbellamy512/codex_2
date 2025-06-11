@@ -255,7 +255,11 @@ def exe(
         raise RuntimeError("wandb is required for exe")
 
     if bet_strats is None:
-        bet_strats = ["both", "dog", "fav"]
+        bet_strats = (
+            ["both", "home", "away"]
+            if orientation == "home_away"
+            else ["both", "dog", "fav"]
+        )
     if margins is None:
         margins = [0, 0.5, 1, 1.5, 2] if bet_type == "spread" else [0.025, 0.05, 0.075, 0.1]
 
@@ -472,6 +476,13 @@ def run_pipeline(
         train_weight=train_weight,
         metric_threshold=metric_threshold,
     )
+    if bet_strats is None:
+        bet_strats = (
+            ["both", "home", "away"]
+            if orientation == "home_away"
+            else ["both", "dog", "fav"]
+        )
+
     results_df = exe(
         df_runs_epochs=top_runs_df,
         features=features,

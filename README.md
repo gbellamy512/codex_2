@@ -144,6 +144,7 @@ python -m nfl_bet.wandb_eval run --project nfl_bet_sweep_8 --top-metric loss --t
 The training and evaluation commands accept two important arguments:
 
 * `--orientation` selects which side of each matchup is modeled. Use `fav_dog` to frame games by favorite and underdog or `home_away` to model home and away teams directly.
+* When no strategies are specified, the defaults depend on the orientation: `["both", "dog", "fav"]` for `fav_dog` and `["both", "home", "away"]` for `home_away`.
 * `--bet-type` chooses whether the targets are based on straight wins (`moneyline`) or covering the spread (`spread`).
 
 Depending on these choices, different target columns and odds are used. Implied probabilities are derived with `calculate_implied_probabilities()` from the respective odds columns.
