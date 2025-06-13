@@ -8,6 +8,7 @@ from nfl_bet import (
     get_betting_context,
     filter_results_df,
 )
+from nfl_bet.constants import DEFAULT_FEATURES
 
 DATA_DIR = "data"
 RESULTS_DIR = "results"
@@ -63,17 +64,7 @@ def run_once(
         orientation=orientation,
         bet_type=bet_type,
     )
-    features = [
-        "rushing_offense_adv",
-        "passing_offense_adv",
-        "rushing_defense_adv",
-        "passing_defense_adv",
-        "win_percentage_diff",
-        "implied_prob_diff",
-        "rest_advantage",
-        "div_game",
-        "h2h_type",
-    ]
+    features = DEFAULT_FEATURES
     context = get_betting_context(orientation, bet_type)
     cat_features = ["h2h_type", "div_game"]
     target_col = (
