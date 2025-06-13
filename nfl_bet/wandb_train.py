@@ -187,6 +187,7 @@ def train(config: Optional[dict] = None) -> None:
         bet_type = getattr(cfg, "bet_type", "moneyline")
         model_type = "regression" if bet_type == "spread" else "classification"
         wandb.config.update({"model_type": model_type}, allow_val_change=True)
+        wandb.config.update({"features": features}, allow_val_change=True)
         wandb.log({"orientation": orientation, "bet_type": bet_type, "model_type": model_type})
 
         data, pass_rates, win_percentages, schedules = load_data()
