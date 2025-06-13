@@ -558,6 +558,10 @@ def main(argv: Optional[list[str]] = None) -> None:
         help="Number of sweep runs to execute",
     )
     sweep_parser.add_argument(
+        "--sweep-id",
+        help="Existing sweep ID to run. If omitted a new sweep is created",
+    )
+    sweep_parser.add_argument(
         "--orientation",
         choices=["fav_dog", "home_away"],
         default="fav_dog",
@@ -578,8 +582,14 @@ def main(argv: Optional[list[str]] = None) -> None:
             bet_type=args.bet_type,
         )
     elif args.command == "sweep":
-        sid = create_sweep(
-            project=args.project, orientation=args.orientation, bet_type=args.bet_type
+        sid = (
+            args.sweep_id
+            if args.sweep_id
+            else create_sweep(
+                project=args.project,
+                orientation=args.orientation,
+                bet_type=args.bet_type,
+            )
         )
         run_sweep(sid, count=args.count)
 
