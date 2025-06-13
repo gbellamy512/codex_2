@@ -368,19 +368,14 @@ def filter_results_df(
     if bet_type not in {"moneyline", "spread"}:
         raise ValueError(f"Invalid bet_type: {bet_type}")
 
-    if orientation == "fav_dog":
-        team1, team2 = "fav", "dog"
-        result_col = "dog_win" if bet_type == "moneyline" else "fav_cover"
-    else:
-        team1, team2 = "home", "away"
-        result_col = "home_win" if bet_type == "moneyline" else "home_cover"
+    ctx = get_betting_context(orientation, bet_type)
+    team1 = ctx["team1_label"]
+    team2 = ctx["team2_label"]
+    result_col = ctx["target"]
+    train_col = ctx["regression_target"] if bet_type == "spread" else ctx["target"]
 
-    if bet_type == "moneyline":
-        team1_odds_col = f"{team1}_moneyline"
-        team2_odds_col = f"{team2}_moneyline"
-    else:
-        team1_odds_col = f"{team1}_spread_odds"
-        team2_odds_col = f"{team2}_spread_odds"
+    team1_odds_col = ctx["team1_odds_col"]
+    team2_odds_col = ctx["team2_odds_col"]
 
     prob1_col = f"{team1}_implied_prob"
     prob2_col = f"{team2}_implied_prob"
@@ -402,6 +397,8 @@ def filter_results_df(
         f"{team2}_score",
         result_col,
     ]
+    if train_col != result_col:
+        cols.append(train_col)
 
     # cols += list(features) + ["bet_team", "bet", "profit"]
     cols += list(features)
@@ -417,8 +414,8 @@ def filter_results_df(
 
     df_filtered = df[[c for c in cols if c in df.columns]].copy()
 
-    # Include a generic 'target' column for easier downstream processing
-    if result_col in df_filtered.columns and "target" not in df_filtered.columns:
-        df_filtered["target"] = df_filtered[result_col]
+    # Store the training target in a generic 'target' column for easier downstream processing
+    if train_col in df_filtered.columns and "target" not in df_filtered.columns:
+        df_filtered["target"] = df_filtered[train_col]
 
     return df_filtered
