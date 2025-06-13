@@ -72,7 +72,7 @@ features = [
     "rushing_defense_adv",
     "passing_defense_adv",
     "win_percentage_diff",
-    "implied_prob_diff",
+    # "implied_prob_diff",
     "rest_advantage",
     "div_game",
     "h2h_type",
