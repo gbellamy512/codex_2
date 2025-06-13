@@ -188,10 +188,10 @@ Depending on these choices, different target columns and odds are used. Implied 
 
 For spread bets, ``get_betting_context()`` also returns ``line_col`` and
 ``regression_target``. These point to the appropriate spread column (e.g.,
-``fav_line`` or ``home_line``) and the numeric margin target (``fav_margin`` or
-``home_margin``).
+``fav_line`` or ``home_line``) and the numeric point-difference target
+(``fav_diff`` or ``home_diff``).
 
 When ``--bet-type spread`` is selected the CLI tools automatically switch to a
 regression model. The network's last layer uses a linear activation and MSE loss
-while predictions represent the expected margin. Betting decisions compare this
-margin against the market line plus any supplied margin.
+while predictions represent the expected point difference. Betting decisions
+compare this difference against the market line plus any supplied margin.

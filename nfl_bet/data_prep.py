@@ -45,7 +45,7 @@ def add_h2h(data: pd.DataFrame) -> pd.DataFrame:
                 data.at[index, "h2h_team"] = last_game["away_team"]
             else:
                 data.at[index, "h2h_team"] = "tie"
-    
+
     def assign_h2h_type(row):
         if pd.isna(row["h2h_team"]):
             return "na"
@@ -195,7 +195,9 @@ def prepare_df(
 
     if orientation == "fav_dog":
         # Determine favorite/underdog using the spread when available
-        df[["favorite", "dog"]] = df.apply(determine_favorite, axis=1, result_type="expand")
+        df[["favorite", "dog"]] = df.apply(
+            determine_favorite, axis=1, result_type="expand"
+        )
         df["dog_home"] = df["favorite"].apply(lambda x: 1 if x == "away" else 0)
 
         def map_h2h_type(row):
@@ -214,15 +216,24 @@ def prepare_df(
             dog_col = home_col.replace("home", "dog")
             if away_col in df.columns:
                 df[fav_col] = df.apply(
-                    lambda row: row[home_col] if row["favorite"] == "home" else row[away_col],
+                    lambda row: (
+                        row[home_col] if row["favorite"] == "home" else row[away_col]
+                    ),
                     axis=1,
                 )
                 df[dog_col] = df.apply(
-                    lambda row: row[away_col] if row["favorite"] == "home" else row[home_col],
+                    lambda row: (
+                        row[away_col] if row["favorite"] == "home" else row[home_col]
+                    ),
                     axis=1,
                 )
         df.drop(columns=(home_cols + away_cols + ["favorite", "dog"]), inplace=True)
-        df["dog_win"] = df.apply(lambda row: 1 if row["dog_score"] > row["fav_score"] else 0, axis=1)
+
+        df["dog_win"] = df.apply(
+            lambda row: 1 if row["dog_score"] > row["fav_score"] else 0, axis=1
+        )
+        df["fav_diff"] = df["fav_score"] - df["dog_score"]
+        df["dog_diff"] = -df["fav_diff"]
 
         if bet_type == "spread":
             df["dog_margin"] = df["dog_score"] - df["dog_line"] - df["fav_score"]
@@ -244,35 +255,45 @@ def prepare_df(
         df["sunday"] = df["weekday"].apply(lambda x: 1 if x == "Sunday" else 0)
 
         if avg_method == "ewma":
-            df["rushing_offense_adv"] = df[f"ewma_{min_periods}min_{span}span_rushing_offense_net_dog"] - df[
-                f"ewma_{min_periods}min_{span}span_rushing_defense_net_fav"
-            ]
-            df["passing_offense_adv"] = df[f"ewma_{min_periods}min_{span}span_passing_offense_net_dog"] - df[
-                f"ewma_{min_periods}min_{span}span_passing_defense_net_fav"
-            ]
-            df["rushing_defense_adv"] = df[f"ewma_{min_periods}min_{span}span_rushing_defense_net_dog"] - df[
-                f"ewma_{min_periods}min_{span}span_rushing_offense_net_fav"
-            ]
-            df["passing_defense_adv"] = df[f"ewma_{min_periods}min_{span}span_passing_defense_net_dog"] - df[
-                f"ewma_{min_periods}min_{span}span_passing_offense_net_fav"
-            ]
+            df["rushing_offense_adv"] = (
+                df[f"ewma_{min_periods}min_{span}span_rushing_offense_net_dog"]
+                - df[f"ewma_{min_periods}min_{span}span_rushing_defense_net_fav"]
+            )
+            df["passing_offense_adv"] = (
+                df[f"ewma_{min_periods}min_{span}span_passing_offense_net_dog"]
+                - df[f"ewma_{min_periods}min_{span}span_passing_defense_net_fav"]
+            )
+            df["rushing_defense_adv"] = (
+                df[f"ewma_{min_periods}min_{span}span_rushing_defense_net_dog"]
+                - df[f"ewma_{min_periods}min_{span}span_rushing_offense_net_fav"]
+            )
+            df["passing_defense_adv"] = (
+                df[f"ewma_{min_periods}min_{span}span_passing_defense_net_dog"]
+                - df[f"ewma_{min_periods}min_{span}span_passing_offense_net_fav"]
+            )
         else:
-            df["rushing_offense_adv"] = df["rushing_offense_epa_season_dog"] + df[
-                "rushing_defense_epa_season_fav"
-            ]
-            df["passing_offense_adv"] = df["passing_offense_epa_season_dog"] + df[
-                "passing_defense_epa_season_fav"
-            ]
-            df["rushing_defense_adv"] = -df["rushing_defense_epa_season_dog"] - df[
-                "rushing_offense_epa_season_fav"
-            ]
-            df["passing_defense_adv"] = -df["passing_defense_epa_season_dog"] - df[
-                "passing_offense_epa_season_fav"
-            ]
+            df["rushing_offense_adv"] = (
+                df["rushing_offense_epa_season_dog"]
+                + df["rushing_defense_epa_season_fav"]
+            )
+            df["passing_offense_adv"] = (
+                df["passing_offense_epa_season_dog"]
+                + df["passing_defense_epa_season_fav"]
+            )
+            df["rushing_defense_adv"] = (
+                -df["rushing_defense_epa_season_dog"]
+                - df["rushing_offense_epa_season_fav"]
+            )
+            df["passing_defense_adv"] = (
+                -df["passing_defense_epa_season_dog"]
+                - df["passing_offense_epa_season_fav"]
+            )
         df["win_percentage_diff"] = df["win_percentage_dog"] - df["win_percentage_fav"]
         df["rest_advantage"] = df["dog_rest"] - df["fav_rest"]
     else:
         df["home_win"] = df["home_team_win"]
+        df["home_diff"] = df["home_score"] - df["away_score"]
+        df["away_diff"] = -df["home_diff"]
         if bet_type == "spread":
             df["home_margin"] = df["home_score"] - df["home_line"] - df["away_score"]
             df["home_cover"] = df.apply(
@@ -288,31 +309,41 @@ def prepare_df(
         df["sunday"] = df["weekday"].apply(lambda x: 1 if x == "Sunday" else 0)
 
         if avg_method == "ewma":
-            df["rushing_offense_adv"] = df[f"ewma_{min_periods}min_{span}span_rushing_offense_net_away"] - df[
-                f"ewma_{min_periods}min_{span}span_rushing_defense_net_home"
-            ]
-            df["passing_offense_adv"] = df[f"ewma_{min_periods}min_{span}span_passing_offense_net_away"] - df[
-                f"ewma_{min_periods}min_{span}span_passing_defense_net_home"
-            ]
-            df["rushing_defense_adv"] = df[f"ewma_{min_periods}min_{span}span_rushing_defense_net_away"] - df[
-                f"ewma_{min_periods}min_{span}span_rushing_offense_net_home"
-            ]
-            df["passing_defense_adv"] = df[f"ewma_{min_periods}min_{span}span_passing_defense_net_away"] - df[
-                f"ewma_{min_periods}min_{span}span_passing_offense_net_home"
-            ]
+            df["rushing_offense_adv"] = (
+                df[f"ewma_{min_periods}min_{span}span_rushing_offense_net_away"]
+                - df[f"ewma_{min_periods}min_{span}span_rushing_defense_net_home"]
+            )
+            df["passing_offense_adv"] = (
+                df[f"ewma_{min_periods}min_{span}span_passing_offense_net_away"]
+                - df[f"ewma_{min_periods}min_{span}span_passing_defense_net_home"]
+            )
+            df["rushing_defense_adv"] = (
+                df[f"ewma_{min_periods}min_{span}span_rushing_defense_net_away"]
+                - df[f"ewma_{min_periods}min_{span}span_rushing_offense_net_home"]
+            )
+            df["passing_defense_adv"] = (
+                df[f"ewma_{min_periods}min_{span}span_passing_defense_net_away"]
+                - df[f"ewma_{min_periods}min_{span}span_passing_offense_net_home"]
+            )
         else:
-            df["rushing_offense_adv"] = df["rushing_offense_epa_season_away"] + df[
-                "rushing_defense_epa_season_home"
-            ]
-            df["passing_offense_adv"] = df["passing_offense_epa_season_away"] + df[
-                "passing_defense_epa_season_home"
-            ]
-            df["rushing_defense_adv"] = -df["rushing_defense_epa_season_away"] - df[
-                "rushing_offense_epa_season_home"
-            ]
-            df["passing_defense_adv"] = -df["passing_defense_epa_season_away"] - df[
-                "passing_offense_epa_season_home"
-            ]
-        df["win_percentage_diff"] = df["win_percentage_away"] - df["win_percentage_home"]
+            df["rushing_offense_adv"] = (
+                df["rushing_offense_epa_season_away"]
+                + df["rushing_defense_epa_season_home"]
+            )
+            df["passing_offense_adv"] = (
+                df["passing_offense_epa_season_away"]
+                + df["passing_defense_epa_season_home"]
+            )
+            df["rushing_defense_adv"] = (
+                -df["rushing_defense_epa_season_away"]
+                - df["rushing_offense_epa_season_home"]
+            )
+            df["passing_defense_adv"] = (
+                -df["passing_defense_epa_season_away"]
+                - df["passing_offense_epa_season_home"]
+            )
+        df["win_percentage_diff"] = (
+            df["win_percentage_away"] - df["win_percentage_home"]
+        )
         df["rest_advantage"] = df["away_rest"] - df["home_rest"]
     return df
