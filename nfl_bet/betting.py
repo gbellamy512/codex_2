@@ -62,7 +62,7 @@ def determine_spread_bet_team(
     team1_label: str = "dog",
     team2_label: str = "fav",
 ) -> str:
-    """Return which side to bet based on predicted margin vs. the spread.
+    """Return which side to bet based on predicted point difference vs. the spread.
 
     Parameters
     ----------
@@ -77,6 +77,11 @@ def determine_spread_bet_team(
         Label for the team when betting on the side predicted to cover.
     team2_label : str, optional
         Label for the opposite team.
+
+    Notes
+    -----
+    ``predictions`` are expected to represent the point difference
+    between ``team1`` and ``team2`` from ``team1``'s perspective.
     """
     predicted = row["predictions"]
     line = row[line_col]
@@ -203,7 +208,7 @@ def get_betting_context(orientation: str, bet_type: str) -> dict:
             team1_label = "fav"
             team2_label = "dog"
             target = "fav_cover"
-            regression_target = "fav_margin"
+            regression_target = "fav_diff"
             line_col = "fav_line"
             team1_odds_col = "fav_spread_odds"
             team2_odds_col = "dog_spread_odds"
@@ -216,7 +221,7 @@ def get_betting_context(orientation: str, bet_type: str) -> dict:
             team2_odds_col = "away_moneyline"
         else:
             target = "home_cover"
-            regression_target = "home_margin"
+            regression_target = "home_diff"
             line_col = "home_line"
             team1_odds_col = "home_spread_odds"
             team2_odds_col = "away_spread_odds"
@@ -340,7 +345,9 @@ def evaluate_betting_strategy(
     }
 
 
-def filter_results_df(df: pd.DataFrame, features: list[str], orientation: str, bet_type: str) -> pd.DataFrame:
+def filter_results_df(
+    df: pd.DataFrame, features: list[str], orientation: str, bet_type: str
+) -> pd.DataFrame:
     """Return a trimmed version of the betting results DataFrame.
 
     Parameters
