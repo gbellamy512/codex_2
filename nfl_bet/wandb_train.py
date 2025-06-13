@@ -20,6 +20,7 @@ from sklearn.utils.class_weight import compute_class_weight
 
 from .data_prep import prepare_df
 from .betting import evaluate_betting_strategy, get_betting_context
+from .constants import DEFAULT_FEATURES
 
 try:
     import wandb
@@ -66,17 +67,7 @@ def load_data():
 # Modeling helpers
 # ---------------------------------------------------------------------------
 
-features = [
-    "rushing_offense_adv",
-    "passing_offense_adv",
-    "rushing_defense_adv",
-    "passing_defense_adv",
-    "win_percentage_diff",
-    # "implied_prob_diff",
-    "rest_advantage",
-    "div_game",
-    "h2h_type",
-]
+features = DEFAULT_FEATURES
 
 categorical_features = ["h2h_type"]
 binary_features = ["div_game"]

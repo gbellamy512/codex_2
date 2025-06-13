@@ -15,6 +15,7 @@ from joblib import load
 from . import evaluate_betting_strategy, prepare_df, get_betting_context
 from .wandb_train import load_data, CURRENT_YEAR
 from .betting import filter_results_df
+from .constants import DEFAULT_FEATURES
 
 RESULTS_DIR = "results"
 
@@ -620,17 +621,6 @@ def evaluate_single_run(
 # ---------------------------------------------------------------------------
 # CLI helpers
 # ---------------------------------------------------------------------------
-DEFAULT_FEATURES = [
-    "rushing_offense_adv",
-    "passing_offense_adv",
-    "rushing_defense_adv",
-    "passing_defense_adv",
-    "win_percentage_diff",
-    "implied_prob_diff",
-    "rest_advantage",
-    "div_game",
-    "h2h_type",
-]
 
 
 def filter_eval_results(

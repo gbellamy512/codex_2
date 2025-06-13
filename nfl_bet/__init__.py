@@ -7,6 +7,7 @@ from .betting import (
 )
 from .modeling import train_model
 from .wandb_train import train
+from .constants import DEFAULT_FEATURES
 
 __all__ = [
     "prepare_df",
@@ -16,6 +17,7 @@ __all__ = [
     "filter_results_df",
     "train_model",
     "train",
+    "DEFAULT_FEATURES",
 ]
 from .wandb_eval import (
     run_pipeline,
