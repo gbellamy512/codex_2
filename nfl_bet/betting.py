@@ -415,4 +415,10 @@ def filter_results_df(
 
     cols += ["bet_team", "bet", "profit"]
 
-    return df[[c for c in cols if c in df.columns]].copy()
+    df_filtered = df[[c for c in cols if c in df.columns]].copy()
+
+    # Include a generic 'target' column for easier downstream processing
+    if result_col in df_filtered.columns and "target" not in df_filtered.columns:
+        df_filtered["target"] = df_filtered[result_col]
+
+    return df_filtered

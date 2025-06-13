@@ -14,6 +14,7 @@ from joblib import load
 
 from . import evaluate_betting_strategy, prepare_df, get_betting_context
 from .wandb_train import load_data, CURRENT_YEAR
+from .betting import filter_results_df
 
 RESULTS_DIR = "results"
 
@@ -742,12 +743,29 @@ def main(argv: Optional[List[str]] = None) -> None:
         out_dir = args.output or RESULTS_DIR
         os.makedirs(out_dir, exist_ok=True)
         # test_path = os.path.join(out_dir, f"{args.run_id}_test_preds.csv")
-        test_path = os.path.join(out_dir, f"{args.run_id}_test_preds_{args.orientation}_{args.bet_type}_{args.margin}.csv")
-        test_res["df"].to_csv(test_path, index=False)
+        test_df = filter_results_df(
+            test_res["df"],
+            DEFAULT_FEATURES,
+            args.orientation,
+            args.bet_type,
+        )
+        test_path = os.path.join(
+            out_dir,
+            f"{args.run_id}_test_preds_{args.orientation}_{args.bet_type}_{args.margin}.csv",
+        )
+        test_df.to_csv(test_path, index=False)
         print(f"Test ROI: {test_res['roi']:.2f}% -> {test_path}")
-        # cy_path = os.path.join(out_dir, f"{args.run_id}_cy_preds.csv")
-        cy_path = os.path.join(out_dir, f"{args.run_id}_cy_preds_{args.orientation}_{args.bet_type}_{args.margin}.csv")
-        cy_res["df"].to_csv(cy_path, index=False)
+        cy_df = filter_results_df(
+            cy_res["df"],
+            DEFAULT_FEATURES,
+            args.orientation,
+            args.bet_type,
+        )
+        cy_path = os.path.join(
+            out_dir,
+            f"{args.run_id}_cy_preds_{args.orientation}_{args.bet_type}_{args.margin}.csv",
+        )
+        cy_df.to_csv(cy_path, index=False)
         print(f"Current year ROI: {cy_res['roi']:.2f}% -> {cy_path}")
 
 
