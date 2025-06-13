@@ -96,6 +96,7 @@ Utilities for running training jobs with optional W&B sweeps.
 |----------|---------|
 | `--project` | required |
 | `--count` | `50` |
+| `--sweep-id` | *(optional)* |
 | `--orientation` | required |
 | `--bet-type` | required |
 
@@ -105,10 +106,10 @@ Minimal example:
 python -m nfl_bet.wandb_train example --project my_project
 ```
 
-All parameters:
+All parameters (use `--sweep-id` to run an existing sweep):
 
 ```bash
-python -m nfl_bet.wandb_train sweep --project nfl_bet_sweep --count 3 --orientation home_away --bet-type spread
+python -m nfl_bet.wandb_train sweep --project nfl_bet_sweep --count 3 --sweep-id ABC123 --orientation home_away --bet-type spread
 ```
 
 ### `python -m nfl_bet.wandb_eval`
