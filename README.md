@@ -100,6 +100,9 @@ Utilities for running training jobs with optional W&B sweeps.
 | `--orientation` | required |
 | `--bet-type` | required |
 
+When using `--sweep-id` to resume an existing sweep, pass the original
+`--project` so the agent logs to the correct W&B project.
+
 Minimal example:
 
 ```bash
