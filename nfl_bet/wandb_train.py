@@ -461,13 +461,38 @@ def create_sweep(
     return sweep_id
 
 
-def run_sweep(sweep_id: str, *, count: int = 50) -> None:
-    """Launch a W&B sweep agent."""
+def run_sweep(
+    sweep_id: str,
+    *,
+    count: int = 50,
+    project: str | None = None,
+    entity: str | None = None,
+) -> None:
+    """Launch a W&B sweep agent.
+
+    Parameters
+    ----------
+    sweep_id : str
+        Identifier of the sweep to run.
+    count : int, optional
+        Number of runs to execute. Defaults to ``50``.
+    project : str, optional
+        W&B project name. Must match the project used to create the sweep when
+        running an existing sweep.
+    entity : str, optional
+        W&B entity (username or organization).
+    """
 
     if wandb is None:
         raise ImportError("wandb must be installed to run sweeps")
 
-    wandb.agent(sweep_id=sweep_id, function=train, count=count)
+    wandb.agent(
+        sweep_id=sweep_id,
+        function=train,
+        count=count,
+        project=project,
+        entity=entity,
+    )
 
 # ---------------------------------------------------------------------------
 # Example entry point
@@ -591,7 +616,10 @@ def main(argv: Optional[list[str]] = None) -> None:
                 bet_type=args.bet_type,
             )
         )
-        run_sweep(sid, count=args.count)
+        if args.sweep_id:
+            run_sweep(sid, count=args.count, project=args.project)
+        else:
+            run_sweep(sid, count=args.count)
 
 
 if __name__ == "__main__":  # pragma: no cover
