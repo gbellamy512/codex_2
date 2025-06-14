@@ -51,6 +51,7 @@ def run_once(
     schedules: pd.DataFrame,
     margin: float = 0.0,
     save_csv: bool = False,
+    save_dataset: bool = False,
 ) -> None:
     """Train and evaluate a single orientation/bet type combination."""
     model_type = "regression" if bet_type == "spread" else "classification"
@@ -70,6 +71,14 @@ def run_once(
     target_col = (
         context["regression_target"] if model_type == "regression" else context["target"]
     )
+
+    if save_dataset:
+        os.makedirs(RESULTS_DIR, exist_ok=True)
+        df_dataset = df[features + [target_col]].copy()
+        if target_col != "target":
+            df_dataset = df_dataset.rename(columns={target_col: "target"})
+        out_dataset = f"{RESULTS_DIR}/training_data_{orientation}_{bet_type}.csv"
+        df_dataset.to_csv(out_dataset, index=False)
     model, pipeline, (X_test, y_test) = train_model(
         df,
         features,
@@ -127,6 +136,14 @@ def main(argv: None | list[str] = None) -> None:
         ),
     )
     parser.add_argument(
+        "--save-dataset",
+        action="store_true",
+        help=(
+            "Save training data (features + target) to "
+            "results/training_data_<orientation>_<bet-type>.csv"
+        ),
+    )
+    parser.add_argument(
         "--run-all",
         action="store_true",
         help="Run all orientation/bet-type combinations sequentially",
@@ -157,6 +174,7 @@ def main(argv: None | list[str] = None) -> None:
                 schedules=schedules,
                 margin=args.margin,
                 save_csv=True,
+                save_dataset=args.save_dataset,
             )
     else:
         run_once(
@@ -168,6 +186,7 @@ def main(argv: None | list[str] = None) -> None:
             schedules=schedules,
             margin=args.margin,
             save_csv=args.save_csv,
+            save_dataset=args.save_dataset,
         )
 
 
